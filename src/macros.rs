@@ -1,4 +1,4 @@
-//! Define `own` macro.
+//! Define macros.
 
 /// Get `Box<str>` from `&str`
 #[macro_export]
