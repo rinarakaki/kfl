@@ -1,16 +1,4 @@
 //! Structures that represent abstract syntax tree (AST) of the KDL document
-//!
-//! All of these types are parameterised by the `S` type which is a span type
-//! (perhaps implements [`Span`](crate::traits::Span). The idea is that most of
-//! the time spans are used for errors (either at parsing time, or at runtime),
-//! and original source is somewhere around to show in error snippets. So it's
-//! faster to only track byte offsets and calculate line number and column when
-//! printing code snippet. So use [`span::Span`](crate::traits::Span).
-//!
-//! But sometimes you will not have KDL source around, or performance of
-//! priting matters (i.e. you log source spans). In that case, span should
-//! contain line and column numbers for things, use
-//! [`LineSpan`](crate::span::LineSpan) for that.
 
 use alloc::{
     borrow::ToOwned,
@@ -56,7 +44,7 @@ pub struct Scalar {
 }
 
 impl Node {
-    /// TODO(rnarkk) document
+    ///
     pub fn new(name: &str) -> Self {
         Self {
             type_name: None,
@@ -67,9 +55,8 @@ impl Node {
         }
     }
     /// Returns node children
-    pub fn children(&self)
-        -> impl Iterator<Item = &Node> +
-                ExactSizeIterator
+    pub fn children(&self) -> impl Iterator<Item = &Node>
+                            + ExactSizeIterator
     {
         self.children.as_ref().map(|c| c.iter()).unwrap_or_else(|| [].iter())
     }
