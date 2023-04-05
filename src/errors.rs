@@ -16,7 +16,7 @@ use alloc::{
 use core::fmt::{self, Display, Write};
 
 use thiserror::Error;
-use miette::{Diagnostic, NamedSource};
+use miette::{Diagnostic, NamedSource, Report};
 
 use crate::span::Span;
 
@@ -33,7 +33,7 @@ pub struct Error {
     #[source_code]
     pub(crate) source_code: NamedSource,
     #[related]
-    pub(crate) errors: Vec<miette::Error>,
+    pub(crate) errors: Vec<Report>,
 }
 
 /// An error type that is returned by decoder traits and emitted to the context
