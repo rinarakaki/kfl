@@ -96,7 +96,7 @@ pub enum DecodeError {
     #[diagnostic()]
     #[error("{}", message)]
     MissingNode {
-        /// Descriptino of what's missing
+        /// Description of what's missing
         message: String,
     },
     /// Unexpected entity encountered
