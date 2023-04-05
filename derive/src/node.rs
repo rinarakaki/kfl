@@ -728,7 +728,7 @@ pub(crate) fn encode_properties(s: &Common, node: &syn::Ident, variant: bool)
                     let default: #ty = #default;
                     if &default != #field {
                         let #scalar = #encode_scalar?;
-                        #node.properties.insert(#name.to_owned().into_boxed_str(), #scalar);
+                        #node.properties.insert(::kfl::own!(#name), #scalar);
                     }
                 });
             } else {
@@ -742,7 +742,7 @@ pub(crate) fn encode_properties(s: &Common, node: &syn::Ident, variant: bool)
                 branches.push(quote! {
                     let #scalar = #encode_scalar?;
                     // let mut #seen_name = false;
-                    #node.properties.insert(#name.to_owned().into_boxed_str(), #scalar);
+                    #node.properties.insert(::kfl::own!(#name), #scalar);
                 });
             }
         }

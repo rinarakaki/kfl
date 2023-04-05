@@ -326,6 +326,6 @@ fn declare_variant(node: &syn::Ident, enum_name: &syn::Ident, name: &syn::Ident)
     let name = crate::to_kebab_case(name);
     quote! {
         let mut #node = ::kfl::ast::Node::new(#name);
-        #node.type_name = Some(#enum_name.to_owned().into_boxed_str());
+        #node.type_name = Some(::kfl::own!(#enum_name));
     }
 }

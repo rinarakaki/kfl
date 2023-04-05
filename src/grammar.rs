@@ -17,6 +17,7 @@ use crate::{
     ast::{Node, Scalar},
     context::Context,
     errors::{ParseError, TokenFormat},
+    own,
     span::Span
 };
 
@@ -39,7 +40,7 @@ fn newline<'a>() -> impl Parser<'a, I<'a>, (), Extra> + Clone {
         .or(just('\u{2028}'))  // Line separator
         .or(just('\u{2029}'))  // Paragraph separator
         .ignored()
-    // .map_err(|e: ParseError| e.with_expected_kind("newline"))
+    .map_err(|e: ParseError| e.with_expected_kind("newline"))
 }
 
 fn ws_char<'a>() -> impl Parser<'a, I<'a>, (), Extra> + Clone {
@@ -63,7 +64,7 @@ fn id_char<'a>() -> impl Parser<'a, I<'a>, char, Extra> + Clone {
         // newline (excluding <= 0x20)
         '\u{0085}' | '\u{2028}' | '\u{2029}'
     ))
-    // .map_err(|e: ParseError| e.with_expected_kind("letter"))
+    .map_err(|e: ParseError| e.with_expected_kind("letter"))
 }
 
 fn id_sans_dig<'a>() -> impl Parser<'a, I<'a>, char, Extra> + Clone {
@@ -78,7 +79,7 @@ fn id_sans_dig<'a>() -> impl Parser<'a, I<'a>, char, Extra> + Clone {
         // newline (excluding <= 0x20)
         '\u{0085}' | '\u{2028}' | '\u{2029}'
     ))
-    // .map_err(|e: ParseError| e.with_expected_kind("letter"))
+    .map_err(|e: ParseError| e.with_expected_kind("letter"))
 }
 
 fn id_sans_sign_dig<'a>() -> impl Parser<'a, I<'a>, char, Extra> + Clone {
@@ -93,7 +94,7 @@ fn id_sans_sign_dig<'a>() -> impl Parser<'a, I<'a>, char, Extra> + Clone {
         // newline (excluding <= 0x20)
         '\u{0085}' | '\u{2028}' | '\u{2029}'
     ))
-    // .map_err(|e: ParseError| e.with_expected_kind("letter"))
+    .map_err(|e: ParseError| e.with_expected_kind("letter"))
 }
 
 fn ws<'a>() -> impl Parser<'a, I<'a>, (), Extra> + Clone {
@@ -103,7 +104,7 @@ fn ws<'a>() -> impl Parser<'a, I<'a>, (), Extra> + Clone {
 
 fn comment<'a>() -> impl Parser<'a, I<'a>, (), Extra> + Clone {
     begin_comment('/')
-    .then(any().repeated().then(newline().or(end())))  // take_until
+    .then(any().repeated().then(newline().or(end())))
     .ignored()
 }
 
@@ -229,7 +230,7 @@ fn escaped_string<'a>() -> impl Parser<'a, I<'a>, Box<str>, Extra> + Clone {
     .ignore_then(
         any().filter(|&c| c != '"' && c != '\\')
         .or(just('\\').ignore_then(esc_char()))
-        .repeated().map_slice(|v| v.to_owned().into_boxed_str()))
+        .repeated().map_slice(|v| own!(v)))
     .then_ignore(just('"'))
     .map_err_with_span(|err: ParseError, span| {
         if matches!(&err, ParseError::Unexpected { found: TokenFormat::Eoi, .. })
@@ -256,7 +257,7 @@ fn bare_ident<'a>() -> impl Parser<'a, I<'a>, Box<str>, Extra> + Clone {
         sign.repeated().exactly(1).map_slice(|v| v),
         sign.repeated().then(id_sans_sign_dig()).then(id_char().repeated()).map_slice(|v| v)
     ))
-    .map_slice(|s| s.to_owned().into_boxed_str())
+    .map_slice(|s| own!(s))
 }
 
 fn ident<'a>() -> impl Parser<'a, I<'a>, Box<str>, Extra> + Clone {
