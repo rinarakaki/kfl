@@ -144,13 +144,6 @@ pub enum DecodeError {
         /// Description of why the value is not supported
         message: Cow<'static, str>,
     },
-    /// Custom error that can be emitted during decoding
-    ///
-    /// This is not used by the kfl itself. Note most of the time it's
-    /// better to use [`DecodeError::Conversion`] as that will associate
-    /// source code span to the error.
-    #[error(transparent)]
-    Custom(Box<dyn std::error::Error + Send + Sync + 'static>),
 }
 
 ///
@@ -177,10 +170,6 @@ pub enum EncodeError {
         /// Description of the error
         message: String,
     },
-    ///
-    #[diagnostic()]
-    #[error(transparent)]
-    Custom(Box<dyn std::error::Error + Send + Sync + 'static>)
 }
 
 ///
