@@ -1,0 +1,40 @@
+{
+    "name": "kfl",
+    "displayName": "KFL",
+    "description": "Language support for the KFL Document Language",
+    "version": "0.0.1",
+    "license": "Apache-2.0",
+    "publisher": "synthetic",
+    "repository": "https://github.com/synthet-ic/kfl.git",
+    "engines": {
+        "vscode": "^1.70.0"
+    },
+    "categories": [
+        "Programming Languages"
+    ],
+    "contributes": {
+        "languages": [
+            {
+                "id": "kdl",
+                "aliases": [
+                    "KDL",
+                    "kdl"
+                ],
+                "extensions": [
+                    ".kdl"
+                ],
+                "configuration": "./language-configuration.json"
+            }
+        ],
+        "grammars": [
+            {
+                "language": "kdl",
+                "scopeName": "source.kdl",
+                "path": "./kdl.tmLanguage.json"
+            }
+        ]
+    },
+    "devDependencies": {
+        "vsce": "^2.15.0"
+    }
+}
