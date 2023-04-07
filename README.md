@@ -41,7 +41,7 @@ foo 1 "three" key="val" {                           ╮
 
 # Usage
 
-Most common usage of this library is using `derive` and [parse] function:
+Most common usage of this library is using `derive` and [decode] or [decode_children] function:
 
 ```rust
 use kfl::{Decode, DecodePartial, Encode};
