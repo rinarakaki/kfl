@@ -15,7 +15,6 @@ rust-version = "1.62.0"
 readme = "README.md"
 
 [dependencies]
-
 kfl-derive = { path = "./derive", version = "0", optional = true }
 # chumsky = { version = "0.9", default-features = false }
 chumsky = { git = "https://github.com/zesterer/chumsky", branch = "zero-copy" }
