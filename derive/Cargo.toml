@@ -1,6 +1,6 @@
 [package]
 name = "kfl-derive"
-version = "0.0.17"
+version = "0.0.18"
 edition = "2021"
 description = "A derive implementation for kfl KDL parser"
 license = "MIT/Apache-2.0"
@@ -15,10 +15,10 @@ proc_macro = true
 
 [dependencies]
 heck = "0.4"
-syn = { version = "1", features = ["full", "extra-traits"] }
+syn = { version = "2", features = ["full", "extra-traits"] }
 quote = "1"
 proc-macro2 = "1"
-proc-macro-error = "1"
+proc-macro-error2 = "0"
 
 [dev-dependencies]
 kfl = { path = ".." }
