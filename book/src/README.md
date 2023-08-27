@@ -78,5 +78,4 @@
 ### `no_std`
 
 - `miette` doesn't support `no_std`
-- [ ] `proc_macro_error` doesn't support `no_std`
 - `HashMap` isn't included in `alloc`
