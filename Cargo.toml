@@ -9,9 +9,9 @@ description = "Another KDL language implementation"
 license = "MIT/Apache-2.0"
 keywords = ["kdl", "configuration", "parser"]
 categories = ["parsing", "parser-implementations", "config", "encoding"]
-homepage = "https://gitlab.com/synthetic/kfl"
+homepage = "https://gitlab.com/synthetic/kfl/kfl"
 documentation = "https://docs.rs/kfl"
-rust-version = "1.62.0"
+rust-version = "1.70.0"
 readme = "README.md"
 
 [dependencies]
