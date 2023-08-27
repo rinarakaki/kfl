@@ -55,7 +55,6 @@ fn emit_encode_partial(def: &Definition) -> EmitResult {
     }
 }
 
-// #[proc_macro_error::proc_macro_error]
 #[proc_macro_derive(Decode, attributes(kfl))]
 pub fn decode_derive(input: TokenStream) -> TokenStream {
     let item = syn::parse_macro_input!(input as Definition);
@@ -65,7 +64,6 @@ pub fn decode_derive(input: TokenStream) -> TokenStream {
     }
 }
 
-// #[proc_macro_error::proc_macro_error]
 #[proc_macro_derive(DecodePartial, attributes(kfl))]
 pub fn decode_partial_derive(input: TokenStream) -> TokenStream {
     let item = syn::parse_macro_input!(input as Definition);
@@ -75,7 +73,6 @@ pub fn decode_partial_derive(input: TokenStream) -> TokenStream {
     }
 }
 
-// #[proc_macro_error::proc_macro_error]
 #[proc_macro_derive(DecodeScalar, attributes(kfl))]
 pub fn decode_scalar_derive(input: TokenStream) -> TokenStream {
     let item = syn::parse_macro_input!(input as Scalar);
@@ -85,7 +82,6 @@ pub fn decode_scalar_derive(input: TokenStream) -> TokenStream {
     }
 }
 
-// #[proc_macro_error::proc_macro_error]
 #[proc_macro_derive(Encode, attributes(kfl))]
 pub fn encode_derive(input: TokenStream) -> TokenStream {
     let item = syn::parse_macro_input!(input as Definition);
@@ -95,7 +91,6 @@ pub fn encode_derive(input: TokenStream) -> TokenStream {
     }
 }
 
-// #[proc_macro_error::proc_macro_error]
 #[proc_macro_derive(EncodePartial, attributes(kfl))]
 pub fn encode_partial_derive(input: TokenStream) -> TokenStream {
     let item = syn::parse_macro_input!(input as Definition);
@@ -105,7 +100,6 @@ pub fn encode_partial_derive(input: TokenStream) -> TokenStream {
     }
 }
 
-// #[proc_macro_error::proc_macro_error]
 #[proc_macro_derive(EncodeScalar, attributes(kfl))]
 pub fn encode_scalar_derive(input: TokenStream) -> TokenStream {
     let item = syn::parse_macro_input!(input as Scalar);

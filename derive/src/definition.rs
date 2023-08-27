@@ -1,13 +1,12 @@
 use alloc::{
     boxed::Box,
     format,
-    string::{String, ToString},
+    string::String,
     vec::Vec
 };
 use core::mem;
 
 use proc_macro2::{TokenStream, Span};
-use proc_macro_error2::emit_error;
 use quote::quote;
 use syn::{
     ext::IdentExt,
@@ -208,18 +207,18 @@ impl Enum {
            src_variants: impl Iterator<Item = syn::Variant>)
         -> syn::Result<Self>
     {
-        let mut attrs = parse_attr_list(&attrs);
+        let mut attrs = parse_attr_list(&attrs)?;
         let trait_props = TraitProps::pick_from(&mut attrs);
         if !attrs.is_empty() {
             for (_, span) in attrs {
-                emit_error!(span, "unexpected container attribute");
+                return Err(syn::Error::new(span, "unexpected container attribute"));
             }
         }
 
         let mut variants = Vec::new();
         for var in src_variants {
-            let mut attrs = VariantAttrs::new();
-            attrs.update(parse_attr_list(&var.attrs));
+            let chunk = parse_attr_list(&var.attrs)?;
+            let attrs = VariantAttrs::new().update(chunk)?;
             if attrs.skip {
                 continue;
             }
@@ -399,8 +398,8 @@ impl Struct {
     {
         let mut bld = StructBuilder::new(ident, trait_props, generics);
         for (idx, fld) in fields.enumerate() {
-            let mut attrs = FieldAttrs::new();
-            attrs.update(parse_attr_list(&fld.attrs));
+            let chunk = parse_attr_list(&fld.attrs)?;
+            let attrs = FieldAttrs::new().update(chunk)?;
             let field = Field::new(&fld, idx);
             bld.add_field(field, &attrs)?;
         }
@@ -430,11 +429,12 @@ impl Parse for Definition {
             let item: syn::ItemStruct = input.parse()?;
             attrs.extend(item.attrs);
 
-            let mut attrs = parse_attr_list(&attrs);
+            let mut attrs = parse_attr_list(&attrs)?;
             let trait_props = TraitProps::pick_from(&mut attrs);
             if !attrs.is_empty() {
                 for (_, span) in attrs {
-                    emit_error!(span, "unexpected container attribute");
+                    return Err(syn::Error::new(span,
+                        "unexpected container attribute"));
                 }
             }
 
@@ -491,71 +491,65 @@ impl FieldAttrs {
             default: None,
         }
     }
-    fn update(&mut self, attrs: impl IntoIterator<Item=(Attr, Span)>) {
-        use Attr::*;
 
+    fn update(mut self, attrs: impl IntoIterator<Item=(Attr, Span)>) -> syn::Result<Self> {
         for (attr, span) in attrs {
             match attr {
-                FieldMode(mode) => {
+                Attr::FieldMode(mode) => {
                     if self.mode.is_some() {
-                        emit_error!(span,
+                        return Err(syn::Error::new(span,
                             "only single attribute that defines mode of the \
-                            field is allowed. Perhaps you mean `unwrap`?");
+                            field is allowed. Perhaps you mean `unwrap`?"));
                     }
                     self.mode = Some(mode);
                 }
-                Unwrap(val) => {
+                Attr::Unwrap(val) => {
                     if self.unwrap.is_some() {
-                        emit_error!(span, "`unwrap` specified twice");
+                        return Err(syn::Error::new(span, "`unwrap` specified twice"));
                     }
                     self.unwrap = Some(Box::new(val));
                 }
-                Default(value) => {
+                Attr::Default(value) => {
                     if self.default.is_some() {
-                        emit_error!(span,
-                            "only single default is allowed");
+                        return Err(syn::Error::new(span,
+                            "only single default is allowed"));
                     }
                     self.default = Some(value);
                 }
-                _ => emit_error!(span,
-                    "this attribute is not supported on fields"),
+                _ => return Err(syn::Error::new(span,
+                    "this attribute is not supported on fields")),
             }
         }
+        Ok(self)
     }
 }
 
 impl VariantAttrs {
     fn new() -> VariantAttrs {
-        VariantAttrs {
-            skip: false,
-        }
+        VariantAttrs { skip: false }
     }
-    fn update(&mut self, attrs: impl IntoIterator<Item=(Attr, Span)>) {
-        use Attr::*;
 
+    fn update(mut self, attrs: impl IntoIterator<Item=(Attr, Span)>) -> syn::Result<Self> {
         for (attr, span) in attrs {
             match attr {
-                Skip => self.skip = true,
-                _ => emit_error!(span, "not supported on enum variants"),
+                Attr::Skip => self.skip = true,
+                _ => return Err(syn::Error::new(span, "not supported on enum variants")),
             }
         }
+        Ok(self)
     }
 }
 
-fn parse_attr_list(attrs: &[syn::Attribute]) -> Vec<(Attr, Span)> {
+fn parse_attr_list(attrs: &[syn::Attribute]) -> syn::Result<Vec<(Attr, Span)>> {
     let mut all = Vec::new();
     for attr in attrs {
         if matches!(attr.style, syn::AttrStyle::Outer) &&
             attr.path().is_ident("kfl")
-
         {
-            match attr.parse_args_with(parse_attrs) {
-                Ok(attrs) => all.extend(attrs),
-                Err(e) => emit_error!(e),
-            }
+            all.extend(attr.parse_args_with(parse_attrs)?);
         }
     }
-    return all;
+    Ok(all)
 }
 
 fn parse_attrs(input: ParseStream)
@@ -569,6 +563,7 @@ impl Attr {
     fn parse(input: ParseStream) -> syn::Result<(Self, Span)> {
         Self::_parse(input).map(|a| (a, input.span()))
     }
+
     fn _parse(input: ParseStream) -> syn::Result<Self> {
         let lookahead = input.lookahead1();
         if lookahead.peek(kw::argument) {
@@ -618,10 +613,9 @@ impl Attr {
             let _kw: kw::unwrap = input.parse()?;
             let parens;
             syn::parenthesized!(parens in input);
-            let mut attrs = FieldAttrs::new();
             let chunk = parens.call(parse_attrs)?;
-            attrs.update(chunk);
-            Ok(Attr::Unwrap(attrs))
+            let attrs = FieldAttrs::new();
+            attrs.update(chunk).map(Attr::Unwrap)
         } else if lookahead.peek(kw::skip) {
             let _kw: kw::skip = input.parse()?;
             Ok(Attr::Skip)

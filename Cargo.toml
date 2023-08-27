@@ -3,7 +3,7 @@ members = [".", "derive"]
 
 [package]
 name = "kfl"
-version = "0.0.18"
+version = "0.0.19"
 edition = "2021"
 description = "Another KDL language implementation"
 license = "MIT/Apache-2.0"
@@ -42,7 +42,3 @@ default = ["std", "derive", "base64", "line-numbers"]
 derive = ["kfl-derive"]
 line-numbers = ["unicode-width"]
 std = []
-
-# [[bin]]
-# name = "out"
-# path = "src/out.rs"
