@@ -30,7 +30,7 @@ pub fn parse(ctx: &mut Context, input: &str) -> Result<Vec<Node>, Error> {
 }
 
 /// Parse KDL text and decode it into Rust object
-pub fn decode<T>(file_name: &'static str, input: &str) -> Result<T, Error>
+pub fn decode<T>(file_name: &str, input: &str) -> Result<T, Error>
     where T: Decode,
 {
     let mut ctx = Context::new();
