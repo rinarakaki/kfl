@@ -12,9 +12,6 @@ use chumsky::{
     prelude::*,
 };
 
-type I<'a> = &'a str;
-type Extra = Full<ParseError, Context, ()>;
-
 use crate::{
     ast::Scalar,
     context::Context,
@@ -22,23 +19,27 @@ use crate::{
     traits::{DecodeScalar, EncodeScalar}
 };
 
+type I<'a> = &'a str;
+type Extra = Full<ParseError, Context, ()>;
+
 fn digit<'a>(radix: u32) -> impl Parser<'a, I<'a>, char, Extra> {
     any().filter(move |c: &char| c.is_digit(radix))
 }
 
 fn digits<'a>(radix: u32) -> impl Parser<'a, I<'a>, &'a str, Extra> {
-    any().filter(move |c: &char| c == &'_' || c.is_digit(radix)).repeated().map_slice(|x| x)
+    any().filter(move |c: &char| c == &'_' || c.is_digit(radix)).repeated().to_slice()
 }
 
 fn decimal_number<'a>() -> impl Parser<'a, I<'a>, (u32, Box<str>), Extra> {
     just('-').or(just('+')).or_not()
-    .then(digit(10)).then(digits(10))
+    .then(digit(10))
+    .then(digits(10))
     .then(just('.').then(digit(10)).then(digits(10)).or_not())
     .then(just('e').or(just('E'))
-           .then(just('-').or(just('+')).or_not())
-           .then(digits(10)).or_not())
-    .map_slice(|v|
-        (10, v.chars().filter(|c| c != &'_').collect::<String>().into()))
+          .then(just('-').or(just('+')).or_not())
+          .then(digits(10)).or_not())
+    .to_slice()
+    .map(|v| (10, v.chars().filter(|c| c != &'_').collect::<String>().into()))
 }
 
 fn radix_number<'a>() -> impl Parser<'a, I<'a>, (u32, Box<str>), Extra> {
@@ -46,12 +47,9 @@ fn radix_number<'a>() -> impl Parser<'a, I<'a>, (u32, Box<str>), Extra> {
     just('-').or(just('+')).or_not()
     .then_ignore(just('0'))
     .then(choice((
-        just('b').ignore_then(
-            digit(2).then(digits(2)).map_slice(|s| (2, s))),
-        just('o').ignore_then(
-            digit(8).then(digits(8)).map_slice(|s| (10, s))),
-        just('x').ignore_then(
-            digit(16).then(digits(16)).map_slice(|s| (16, s))),
+        just('b').ignore_then(digit(2).then(digits(2)).to_slice().map(|s| (2, s))),
+        just('o').ignore_then(digit(8).then(digits(8)).to_slice().map(|s| (10, s))),
+        just('x').ignore_then(digit(16).then(digits(16)).to_slice().map(|s| (16, s))),
     )))
     .map(|(sign, (radix, value))| {
         let mut s = String::with_capacity(value.len() + sign.map_or(0, |_| 1));

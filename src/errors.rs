@@ -193,8 +193,8 @@ pub(crate) enum ParseError {
         label: Option<&'static str>,
         #[label("{}", label.unwrap_or("unexpected token"))]
         span: Span,
-        found: TokenFormat,
         expected: BTreeSet<TokenFormat>,
+        found: TokenFormat,
     },
     #[error("unclosed {} {}", label, opened)]
     #[diagnostic()]
@@ -335,18 +335,19 @@ impl ParseError {
     }
 }
 
-use chumsky::input::Input;
+use chumsky::{input::Input, util::MaybeRef};
 
 impl<'a> chumsky::error::Error<'a, &'a str> for ParseError {
-    fn expected_found<E>(expected: E, found: Option<char>, span: <&'a str as Input<'a>>::Span)
-        -> Self
-        where E: IntoIterator<Item = Option<char>>
-    {
+    fn expected_found<E: IntoIterator<Item = Option<MaybeRef<'a, char>>>>(
+        expected: E,
+        found: Option<MaybeRef<'a, char>>,
+        span: <&'a str as Input<'a>>::Span
+    ) -> Self {
         ParseError::Unexpected {
             label: None,
             span: span.into(),
-            found: found.into(),
-            expected: expected.into_iter().map(Into::into).collect(),
+            expected: expected.into_iter().map(|e| e.as_deref().copied().into()).collect(),
+            found: found.as_deref().copied().into(),
         }
     }
     fn merge(mut self, other: Self) -> Self {
