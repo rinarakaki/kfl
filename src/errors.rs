@@ -31,7 +31,7 @@ use crate::span::Span;
 #[error("error parsing KDL")]
 pub struct Error {
     #[source_code]
-    pub(crate) source_code: NamedSource,
+    pub(crate) source_code: NamedSource<String>,
     #[related]
     pub(crate) errors: Vec<Report>,
 }
