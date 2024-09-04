@@ -3,7 +3,7 @@ members = [".", "derive"]
 
 [package]
 name = "kfl"
-version = "0.0.19"
+version = "0.1.0"
 edition = "2021"
 description = "Another KDL language implementation"
 license = "MIT/Apache-2.0"
@@ -19,18 +19,18 @@ kfl-derive = { path = "./derive", version = "0", optional = true }
 # chumsky = { version = "0.9", default-features = false }
 chumsky = { git = "https://github.com/zesterer/chumsky" }
 thiserror = "1"
-miette = "5"
+miette = "7"
 
 # optional
 
-base64 = { version = "0.21", optional = true }
+base64 = { version = "0.22", optional = true }
 chrono = { version = "0.4", optional = true }
 http = { version = "1", optional = true }
-minicbor = { version = "0.20", optional = true, features = ["std", "derive"] }
+minicbor = { version = "0.24", optional = true, features = ["std", "derive"] }
 unicode-width = { version = "0.1", optional = true }
 
 [dev-dependencies]
-miette = { version = "5", features = ["fancy"] }
+miette = { version = "7", features = ["fancy"] }
 
 # TODO remove
 
