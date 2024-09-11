@@ -63,23 +63,27 @@ impl Span {
     pub fn len(&self) -> usize {
         self.1.saturating_sub(self.0)
     }
-    ///
+    /// Check if the span is empty
+    pub fn is_empty(&self) -> bool {
+        self.0 == self.1
+    }
+    /// TODO
     pub fn at_start(&self, chars: usize) -> Self {
         Span(self.0, self.0 + chars)
     }
-    ///
+    /// TODO
     pub fn at_end(&self) -> Self {
         Span(self.1, self.1)
     }
-    ///
+    /// TODO
     pub fn before_start(&self, chars: usize) -> Self {
         Span(self.0.saturating_sub(chars), self.0)
     }
 }
 
-impl Into<SourceSpan> for Span {
-    fn into(self) -> SourceSpan {
-        (self.0, self.1.saturating_sub(self.0)).into()
+impl From<Span> for SourceSpan {
+    fn from(val: Span) -> Self {
+        (val.0, val.1.saturating_sub(val.0)).into()
     }
 }
 
@@ -104,9 +108,9 @@ impl Display for Span {
     }
 }
 
-impl Into<SourceSpan> for LineSpan {
-    fn into(self) -> SourceSpan {
-        (self.0.offset, self.1.offset.saturating_sub(self.0.offset)).into()
+impl From<LineSpan> for SourceSpan {
+    fn from(val: LineSpan) -> Self {
+        (val.0.offset, val.1.offset.saturating_sub(val.0.offset)).into()
     }
 }
 
@@ -116,9 +120,7 @@ impl chumsky::span::Span for Span {
     fn new(_context: Self::Context, range: Range<Self::Offset>) -> Self {
         Self(range.start, range.end)
     }
-    fn context(&self) -> Self::Context {
-        ()
-    }
+    fn context(&self) -> Self::Context {}
     fn start(&self) -> Self::Offset {
         self.0
     }
@@ -187,9 +189,7 @@ impl chumsky::span::Span for LineSpan {
     fn new(_context: Self::Context, range: Range<Self::Offset>) -> Self {
         Self(range.start, range.end)
     }
-    fn context(&self) -> Self::Context {
-        ()
-    }
+    fn context(&self) -> Self::Context {}
     fn start(&self) -> Self::Offset {
         self.0
     }

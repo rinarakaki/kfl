@@ -1,5 +1,13 @@
 stages:
+  - lint
   - build
+
+clippy_check:
+  stage: lint
+  image: rust:latest
+  script:
+    - rustup component add clippy
+    - cargo clippy --all-targets --all-features
 
 rust-latest:
   stage: build

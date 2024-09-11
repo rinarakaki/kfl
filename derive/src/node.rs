@@ -25,12 +25,12 @@ pub fn emit_decode_struct(s: &Struct, named: bool, partial: bool)
     let children = syn::Ident::new("children", Span::mixed_site());
     let (impl_gen, type_gen, bounds) = s.generics.split_for_impl();
 
-    let check_type = check_type(&s_name, &node, &ctx);
-    let decode_arguments = decode_arguments(&s, &node, &ctx)?;
-    let decode_properties = decode_properties(&s, &node, &ctx)?;
+    let check_type = check_type(s_name, &node, &ctx);
+    let decode_arguments = decode_arguments(s, &node, &ctx)?;
+    let decode_properties = decode_properties(s, &node, &ctx)?;
     let decode_children = decode_children(
-        &s, &children, &ctx, Some(quote!(#ctx.span(&#node))))?;
-    let assign_extra = assign_extra(&s)?;
+        s, &children, &ctx, Some(quote!(#ctx.span(&#node))))?;
+    let assign_extra = assign_extra(s)?;
 
     let all_fields = s.all_fields();
     let struct_expression = if named {
@@ -50,9 +50,9 @@ pub fn emit_decode_struct(s: &Struct, named: bool, partial: bool)
     };
     let mut extra_traits = Vec::new();
     if partial {
-        if has_only_children(&s) {
+        if has_only_children(s) {
             let node = syn::Ident::new("node", Span::mixed_site());
-            let decode_partial = decode_partial(&s, &node, &ctx)?;
+            let decode_partial = decode_partial(s, &node, &ctx)?;
             // let name = syn::Ident::new("name", Span::mixed_site());
             // let scalar = syn::Ident::new("scalar", Span::mixed_site());
             // let insert_property = insert_property(&common, &name, &scalar)?;
@@ -470,25 +470,23 @@ pub(crate) fn decode_children(s: &Struct, children: &syn::Ident,
                     postprocess.push(quote! {
                         let #field = #field.unwrap_or_else(|| #default);
                     });
+                } else if let Some(span) = &err_span {
+                    postprocess.push(quote! {
+                        let #field = #field.ok_or_else(|| {
+                            ::kfl::errors::DecodeError::Missing {
+                                span: #span.clone(),
+                                message: #req_msg.into(),
+                            }
+                        })?;
+                    });
                 } else {
-                    if let Some(span) = &err_span {
-                        postprocess.push(quote! {
-                            let #field = #field.ok_or_else(|| {
-                                ::kfl::errors::DecodeError::Missing {
-                                    span: #span.clone(),
-                                    message: #req_msg.into(),
-                                }
-                            })?;
-                        });
-                    } else {
-                        postprocess.push(quote! {
-                            let #field = #field.ok_or_else(|| {
-                                ::kfl::errors::DecodeError::MissingNode {
-                                    message: #req_msg.into(),
-                                }
-                            })?;
-                        });
-                    }
+                    postprocess.push(quote! {
+                        let #field = #field.ok_or_else(|| {
+                            ::kfl::errors::DecodeError::MissingNode {
+                                message: #req_msg.into(),
+                            }
+                        })?;
+                    });
                 }
             }
         }
@@ -537,7 +535,7 @@ pub fn emit_encode_struct(s: &Struct, partial: bool)
         ctx: &ctx,
     };
 
-    let declare_node = declare_node(&node, &s_name);
+    let declare_node = declare_node(&node, s_name);
     // let encode_specials = encode_specials(&common, &node)?;
     let encode_arguments = encode_arguments(&common, &node, false)?;
     let encode_properties = encode_properties(&common, &node, false)?;
@@ -547,7 +545,7 @@ pub fn emit_encode_struct(s: &Struct, partial: bool)
 
     let mut extra_traits = Vec::new();
     if partial {
-        if has_only_children(&s) {
+        if has_only_children(s) {
             let node = syn::Ident::new("node", Span::mixed_site());
             // let name = syn::Ident::new("name", Span::mixed_site());
             // let scalar = syn::Ident::new("scalar", Span::mixed_site());
@@ -738,7 +736,7 @@ pub(crate) fn encode_properties(s: &Common, node: &syn::Ident, variant: bool)
                 //             #ctx.span(&#node), #req_msg)
                 //     })?;
                 // });
-                
+
                 branches.push(quote! {
                     let #scalar = #encode_scalar?;
                     // let mut #seen_name = false;

@@ -9,7 +9,7 @@ use alloc::{
     vec::Vec
 };
 use core::{
-    any::{Any, TypeId}, 
+    any::{Any, TypeId},
     fmt::{Pointer, Debug}
 };
 
@@ -24,9 +24,9 @@ use crate::{
 /// 2. To store and retrieve data in decoders of nodes, scalars and spans
 #[derive(Debug, Default)]
 pub struct Context {
-    ///
+    /// TODO
     pub spans: BTreeMap<Box<str>, Span>,
-    /// 
+    /// TODO
     pub errors: Vec<DecodeError>,
     extensions: BTreeMap<TypeId, Box<dyn Any>>,
 }
@@ -39,13 +39,13 @@ impl Context {
             extensions: BTreeMap::new(),
         }
     }
-    ///
+    /// TODO
     pub(crate) fn set_span<P: Pointer + Debug>(&mut self, pointer: &P, span: Span) {
         // println!("SET {0:?} {0:p}", pointer);
         self.spans.insert(format!("{:p}", pointer).into_boxed_str(), span);
         // println!("{:#?}", &self.spans);
     }
-    ///
+    /// TODO
     #[allow(unused_variables)]
     pub fn span<P: Pointer + Debug>(&self, pointer: &P) -> Span {
         // println!("GET {0:?} {0:p}", pointer);

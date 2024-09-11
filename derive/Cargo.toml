@@ -1,6 +1,6 @@
 [package]
 name = "kfl-derive"
-version = "0.1.1"
+version = "0.2.0"
 edition = "2021"
 description = "A derive implementation for kfl KDL parser"
 license = "MIT/Apache-2.0"
@@ -12,7 +12,7 @@ rust-version = "1.70.0"
 readme = "README.md"
 
 [lib]
-proc_macro = true
+proc-macro = true
 
 [dependencies]
 heck = "0.5"

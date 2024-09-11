@@ -156,10 +156,7 @@ impl<T: Encode> EncodePartial for Option<T> {
     fn encode_partial(&self, node: &mut Node, ctx: &mut Context)
         -> Result<(), EncodeError>
     {
-        let mut children = match mem::take(&mut node.children) {
-            None => Vec::new(),
-            Some(children) => children
-        };
+        let mut children = mem::take(&mut node.children).unwrap_or_default();
         match self {
             None => panic!(),
             Some(t) => {
@@ -176,7 +173,7 @@ impl<T: EncodeScalar> EncodeScalar for Option<T> {
     fn encode(&self, ctx: &mut Context) -> Result<Scalar, EncodeError> {
         match &self {
             None => Ok(Scalar { type_name: None, literal: "null".into() }),
-            Some(scalar) => <T as EncodeScalar>::encode(&scalar, ctx),
+            Some(scalar) => <T as EncodeScalar>::encode(scalar, ctx),
         }
     }
 }
@@ -220,10 +217,7 @@ impl<T: Encode> EncodePartial for Vec<T> {
     fn encode_partial(&self, node: &mut Node, ctx: &mut Context)
         -> Result<(), EncodeError>
     {
-        let mut children = match mem::take(&mut node.children) {
-            None => Vec::new(),
-            Some(children) => children
-        };
+        let mut children = mem::take(&mut node.children).unwrap_or_default();
         for item in self.iter() {
             let child = <T as Encode>::encode(item, ctx)?;
             children.push(child);

@@ -198,7 +198,7 @@ fn esc_char<'a>() -> impl Parser<'a, I<'a>, char, Extra> + Clone {
         .ignore_then(
             any()
             .try_map(|c: char, span: <I as Input>::Span|
-                c.is_digit(16).then(|| c)
+                c.is_ascii_hexdigit().then_some(c)
                 .ok_or_else(|| {
                     ParseError::Unexpected {
                     label: Some("unexpected character"),
@@ -287,12 +287,12 @@ fn type_name<'a>() -> impl Parser<'a, I<'a>, Box<str>, Extra> + Clone {
     ident().delimited_by(just('('), just(')'))
 }
 
-fn spanned<'a, T, P>(p: P) -> impl Parser<'a, I<'a>, T, Extra> + Clone 
+fn spanned<'a, T, P>(p: P) -> impl Parser<'a, I<'a>, T, Extra> + Clone
     where T: Pointer + Debug,
           P: Parser<'a, I<'a>, T, Extra> + Clone,
 {
     p.map_with(|value, extra| {
-        let span = extra.span().clone();
+        let span = extra.span();
         extra.state().set_span(&value, span.into());
         value
     })
@@ -493,7 +493,7 @@ mod test {
             buf.truncate(0);
             miette::JSONReportHandler::new()
                 .render_report(&mut buf, &e).unwrap();
-            return buf;
+            buf
         })
     }
 

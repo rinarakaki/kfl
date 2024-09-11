@@ -44,7 +44,7 @@ pub struct Scalar {
 }
 
 impl Node {
-    ///
+    /// TODO
     pub fn new(name: &str) -> Self {
         Self {
             type_name: None,
@@ -55,15 +55,14 @@ impl Node {
         }
     }
     /// Returns node children
-    pub fn children(&self) -> impl Iterator<Item = &Node>
-                            + ExactSizeIterator
+    pub fn children(&self) -> impl ExactSizeIterator<Item = &Node>
     {
         self.children.as_ref().map(|c| c.iter()).unwrap_or_else(|| [].iter())
     }
 }
 
 impl Scalar {
-    ///
+    /// TODO
     pub fn new(type_name: Box<str>, literal: Box<str>) -> Self {
         Self { type_name: Some(type_name), literal }
     }
