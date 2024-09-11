@@ -20,7 +20,7 @@ use crate::{
 /// Parse KDL text and return AST
 pub fn parse(ctx: &mut Context, input: &str) -> Result<Vec<Node>, Error> {
     grammar::document()
-    .parse_with_state(&input, ctx).into_result()
+    .parse_with_state(input, ctx).into_result()
     .map_err(|errors| {
         Error {
             source_code: NamedSource::new(ctx.get::<&str>().unwrap(), input.to_owned()),
@@ -34,7 +34,7 @@ pub fn decode<T>(file_name: &str, input: &str) -> Result<T, Error>
     where T: Decode,
 {
     let mut ctx = Context::new();
-    let nodes = parse(&mut ctx, &input)?;
+    let nodes = parse(&mut ctx, input)?;
     ctx.set::<String>(file_name.to_owned());
     Decode::decode(&nodes[0], &mut ctx).map_err(|error| {
         Error {
@@ -76,7 +76,7 @@ pub fn decode_with_context<T, F>(file_name: &str, input: &str, set_ctx: F)
           T: DecodePartial,
 {
     let mut ctx = Context::new();
-    let nodes = parse(&mut ctx, &input)?;
+    let nodes = parse(&mut ctx, input)?;
     set_ctx(&mut ctx);
     let mut output = <T as Default>::default();
     for node in nodes {
@@ -142,7 +142,7 @@ pub fn encode_with_context<T, F>(file_name: &str, t: &T, set_ctx: F)
             errors: vec![error.into()],
         }
     })?;
-    Ok(print(&mut ctx, node)?)
+    print(&mut ctx, node)
 }
 
 #[test]

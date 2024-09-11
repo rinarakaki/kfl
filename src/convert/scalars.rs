@@ -53,7 +53,7 @@ fn radix_number<'a>() -> impl Parser<'a, I<'a>, (u32, Box<str>), Extra> {
     )))
     .map(|(sign, (radix, value))| {
         let mut s = String::with_capacity(value.len() + sign.map_or(0, |_| 1));
-        sign.map(|c| s.push(c));
+        if let Some(c) = sign { s.push(c) }
         s.extend(value.chars().filter(|&c| c != '_'));
         (radix, s.into())
     })

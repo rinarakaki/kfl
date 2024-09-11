@@ -104,7 +104,7 @@ fn decode(e: &Common, node: &syn::Ident) -> syn::Result<TokenStream> {
             }
             VariantKind::Tuple(s) => {
                 let decode_variant = decode_variant(
-                    &s,
+                    s,
                     quote!(#enum_name::#variant_name),
                     node,
                     ctx,
@@ -114,7 +114,7 @@ fn decode(e: &Common, node: &syn::Ident) -> syn::Result<TokenStream> {
             }
             VariantKind::Named(s) => {
                 let decode_variant = decode_variant(
-                    &s,
+                    s,
                     quote!(#enum_name::#variant_name),
                     node,
                     ctx,
@@ -191,7 +191,7 @@ pub fn emit_encode_enum(e: &Enum) -> syn::Result<TokenStream> {
     let ctx = syn::Ident::new("ctx", Span::mixed_site());
 
     let (impl_gen, type_gen, bounds) = e.generics.split_for_impl();
-    let encode = encode(&e, &node, &ctx)?;
+    let encode = encode(e, &node, &ctx)?;
     Ok(quote! {
         impl #impl_gen ::kfl::traits::Encode for #name #type_gen #bounds {
             fn encode(&self, #ctx: &mut ::kfl::context::Context)
@@ -303,10 +303,10 @@ fn encode_variant(s: &node::Common, enum_name: &syn::Ident, node: &syn::Ident)
     -> syn::Result<TokenStream>
 {
     let name = &s.object.ident;
-    let declare_variant = declare_variant(&node, enum_name, &name);
+    let declare_variant = declare_variant(node, enum_name, name);
     let encode_arguments = node::encode_arguments(s, node, true)?;
     let encode_properties = node::encode_properties(s, node, true)?;
-    let encode_children = node::encode_children(s, &node,
+    let encode_children = node::encode_children(s, node,
                                           Some(quote!(ctx.span(&#node))))?;
     // let assign_extra = node::assign_extra(s)?;
     Ok(quote! {

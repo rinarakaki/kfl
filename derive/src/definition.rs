@@ -105,6 +105,7 @@ pub enum ChildMode {
 pub struct Child {
     pub field: Field,
     pub mode: ChildMode,
+    #[allow(dead_code)]
     pub unwrap: Option<Box<FieldAttrs>>,
     pub default: Option<Option<syn::Expr>>,
 }
@@ -120,11 +121,13 @@ pub struct ExtraField {
 
 #[derive(Clone)]
 pub struct TraitProps {
+    #[allow(dead_code)]
     pub span_type: Option<syn::Type>,
 }
 
 pub struct Struct {
     pub ident: syn::Ident,
+    #[allow(dead_code)]
     pub trait_props: TraitProps,
     pub generics: syn::Generics,
     pub arguments: Vec<Arg>,
@@ -151,7 +154,9 @@ pub struct StructBuilder {
 
 pub struct NewType {
     pub ident: syn::Ident,
+    #[allow(dead_code)]
     pub trait_props: TraitProps,
+    #[allow(dead_code)]
     pub generics: syn::Generics,
 }
 
@@ -163,6 +168,7 @@ pub struct Variant {
 
 pub struct Enum {
     pub ident: syn::Ident,
+    #[allow(dead_code)]
     pub trait_props: TraitProps,
     pub generics: syn::Generics,
     pub variants: Vec<Variant>,
@@ -185,7 +191,7 @@ fn err_pair(s1: &Field, s2: &Field, t1: &str, t2: &str)
 {
     let mut err = syn::Error::new(s1.span, t1);
     err.combine(syn::Error::new(s2.span, t2));
-    return err;
+    err
 }
 
 impl Variant {
@@ -210,7 +216,7 @@ impl Enum {
         let mut attrs = parse_attr_list(&attrs)?;
         let trait_props = TraitProps::pick_from(&mut attrs);
         if !attrs.is_empty() {
-            for (_, span) in attrs {
+            if let Some((_, span)) = attrs.into_iter().next() {
                 return Err(syn::Error::new(span, "unexpected container attribute"));
             }
         }
@@ -282,6 +288,7 @@ impl StructBuilder {
             extra_fields: Vec::new(),
         }
     }
+
     pub fn build(self) -> Struct {
         Struct {
             ident: self.ident,
@@ -299,6 +306,7 @@ impl StructBuilder {
             extra_fields: self.extra_fields,
         }
     }
+
     pub fn add_field(&mut self, field: Field, attrs: &FieldAttrs)
         -> syn::Result<&mut Self>
     {
@@ -387,7 +395,7 @@ impl StructBuilder {
                 });
             }
         }
-        return Ok(self);
+        Ok(self)
     }
 }
 
@@ -406,6 +414,7 @@ impl Struct {
 
         Ok(bld.build())
     }
+
     pub fn all_fields(&self) -> Vec<&Field> {
         let mut res = Vec::new();
         res.extend(self.arguments.iter().map(|a| &a.field));
@@ -414,7 +423,7 @@ impl Struct {
         res.extend(self.var_props.iter().map(|p| &p.field));
         res.extend(self.children.iter().map(|c| &c.field));
         res.extend(self.extra_fields.iter().map(|f| &f.field));
-        return res;
+        res
     }
 }
 
@@ -432,7 +441,7 @@ impl Parse for Definition {
             let mut attrs = parse_attr_list(&attrs)?;
             let trait_props = TraitProps::pick_from(&mut attrs);
             if !attrs.is_empty() {
-                for (_, span) in attrs {
+                if let Some((_, span)) = attrs.into_iter().next() {
                     return Err(syn::Error::new(span,
                         "unexpected container attribute"));
                 }

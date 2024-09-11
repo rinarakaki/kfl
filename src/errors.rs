@@ -146,7 +146,7 @@ pub enum DecodeError {
     },
 }
 
-///
+/// TODO
 #[allow(dead_code)]
 #[derive(Debug, Diagnostic, Error)]
 #[non_exhaustive]
@@ -155,10 +155,10 @@ pub enum EncodeError {
     #[diagnostic()]
     #[error("{} is a skipped variant", found)]
     ExtraVariant {
-        ///
+        /// TODO
         found: String,
     },
-    ///
+    /// TODO
     #[diagnostic()]
     #[error("{}", message)]
     Unexpected {
@@ -172,13 +172,15 @@ pub enum EncodeError {
     },
 }
 
-///
+/// TODO
 #[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq)]
 pub(crate) enum TokenFormat {
     Char(char),
     Token(&'static str),
     Kind(&'static str),
+    #[allow(dead_code)]
     OpenRaw(usize),
+    #[allow(dead_code)]
     CloseRaw(usize),
     Eoi,
 }
@@ -218,11 +220,11 @@ pub(crate) enum ParseError {
     },
 }
 
-///
+/// TODO
 #[allow(dead_code)]
 #[derive(Debug, Diagnostic, Error)]
 pub(crate) enum PrintError {
-    ///
+    /// TODO
     #[diagnostic()]
     #[error("{}", message)]
     Unexpected {
@@ -316,20 +318,16 @@ impl Display for FormatUnexpected<'_> {
 
 impl ParseError {
     pub(crate) fn with_expected_kind(mut self, token: &'static str) -> Self {
-        match &mut self {
-            ParseError::Unexpected { ref mut expected, .. } => {
-                *expected = [TokenFormat::Kind(token)].into_iter().collect();
-            }
-            _ => {},
+        if let ParseError::Unexpected { ref mut expected, .. } = &mut self {
+            *expected = [TokenFormat::Kind(token)].into_iter().collect();
         }
         self
     }
+
+    #[allow(dead_code)]
     pub(crate) fn with_no_expected(mut self) -> Self {
-        match &mut self {
-            ParseError::Unexpected { ref mut expected, .. } => {
-                *expected = BTreeSet::new();
-            }
-            _ => {},
+        if let ParseError::Unexpected { ref mut expected, .. } = &mut self {
+            *expected = BTreeSet::new();
         }
         self
     }
@@ -350,6 +348,7 @@ impl<'a> chumsky::error::Error<'a, &'a str> for ParseError {
             found: found.as_deref().copied().into(),
         }
     }
+
     fn merge(mut self, other: Self) -> Self {
         use ParseError::*;
         match (&mut self, other) {
@@ -357,12 +356,13 @@ impl<'a> chumsky::error::Error<'a, &'a str> for ParseError {
             (_, other@Unclosed { .. }) => other,
             (Unexpected { expected: ref mut dest, .. },
              Unexpected { expected, .. }) => {
-                dest.extend(expected.into_iter());
+                dest.extend(expected);
                 self
             }
             (_, other) => todo!("{} -> {}", self, other),
         }
     }
+
     // fn unclosed_delimiter(
     //     unclosed_span: Self::Span,
     //     unclosed: char,
@@ -391,6 +391,7 @@ impl DecodeError {
             source: err.into(),
         }
     }
+
     /// Construct [`DecodeError::ScalarKind`] error
     pub fn scalar_kind(span: Span, expected: &'static str, found: Box<str>) -> Self {
         DecodeError::ScalarKind {
@@ -399,6 +400,7 @@ impl DecodeError {
             found,
         }
     }
+
     /// Construct [`DecodeError::Missing`] error
     pub fn missing(span: Span, message: impl Into<String>) -> Self {
         DecodeError::Missing {
@@ -406,6 +408,7 @@ impl DecodeError {
             message: message.into(),
         }
     }
+
     /// Construct [`DecodeError::Unexpected`] error
     pub fn unexpected(span: Span, kind: &'static str,
                       message: impl Into<String>)
@@ -417,6 +420,7 @@ impl DecodeError {
             message: message.into(),
         }
     }
+
     /// Construct [`DecodeError::Unsupported`] error
     pub fn unsupported<T, M>(span: Span, message: M)-> Self
         where M: Into<Cow<'static, str>>,

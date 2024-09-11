@@ -7,7 +7,7 @@ use crate::{
     errors::DecodeError
 };
 
-///
+/// TODO
 pub fn check_type(ident: &str, node: &Node, ctx: &Context)
     -> Result<(), DecodeError>
 {
