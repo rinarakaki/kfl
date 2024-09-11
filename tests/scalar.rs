@@ -34,13 +34,21 @@ fn decode_enum_scalar() {
     }
     assert_decode!(
         r#"node first"#,
-        Node { value: SomeScalar::First });
+        Node {
+            value: SomeScalar::First
+        }
+    );
     assert_decode!(
         r#"node another-option"#,
-        Node { value: SomeScalar::AnotherOption });
-    assert_decode_error!(Node,
+        Node {
+            value: SomeScalar::AnotherOption
+        }
+    );
+    assert_decode_error!(
+        Node,
         r#"node test"#,
-        "expected one of `first`, `another-option`");
+        "expected one of `first`, `another-option`"
+    );
 }
 
 #[test]
@@ -52,12 +60,13 @@ fn decode_option_argument() {
     }
     assert_decode!(
         r#"node "hello""#,
-        Node { name: Some("hello".into()) });
+        Node {
+            name: Some("hello".into())
+        }
+    );
     // TODO(rnarkk) should fail since no `default` directive
     // assert_decode!(
     //     r#"node"#,
     //     Node { name: None });
-    assert_decode!(
-        r#"node null"#,
-        Node { name: None });
+    assert_decode!(r#"node null"#, Node { name: None });
 }

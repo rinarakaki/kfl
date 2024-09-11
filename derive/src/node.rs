@@ -1,24 +1,17 @@
-use alloc::{
-    format,
-    string::ToString,
-    vec,
-    vec::Vec
-};
+use alloc::{format, string::ToString, vec, vec::Vec};
 
-use proc_macro2::{TokenStream, Span};
+use proc_macro2::{Span, TokenStream};
 use quote::{format_ident, quote};
 use syn::ext::IdentExt;
 
-use crate::definition::{Struct, ExtraKind, ChildMode};
+use crate::definition::{ChildMode, ExtraKind, Struct};
 
 pub(crate) struct Common<'a> {
     pub object: &'a Struct,
     pub ctx: &'a syn::Ident,
 }
 
-pub fn emit_decode_struct(s: &Struct, named: bool, partial: bool)
-    -> syn::Result<TokenStream>
-{
+pub fn emit_decode_struct(s: &Struct, named: bool, partial: bool) -> syn::Result<TokenStream> {
     let s_name = &s.ident;
     let node = syn::Ident::new("node", Span::mixed_site());
     let ctx = syn::Ident::new("ctx", Span::mixed_site());
@@ -28,17 +21,16 @@ pub fn emit_decode_struct(s: &Struct, named: bool, partial: bool)
     let check_type = check_type(s_name, &node, &ctx);
     let decode_arguments = decode_arguments(s, &node, &ctx)?;
     let decode_properties = decode_properties(s, &node, &ctx)?;
-    let decode_children = decode_children(
-        s, &children, &ctx, Some(quote!(#ctx.span(&#node))))?;
+    let decode_children = decode_children(s, &children, &ctx, Some(quote!(#ctx.span(&#node))))?;
     let assign_extra = assign_extra(s)?;
 
     let all_fields = s.all_fields();
     let struct_expression = if named {
-        let assignments = all_fields.iter()
-            .map(|f| f.as_assign_pair().unwrap());
+        let assignments = all_fields.iter().map(|f| f.as_assign_pair().unwrap());
         quote!(#s_name { #(#assignments,)* })
     } else {
-        let mut fields = all_fields.iter()
+        let mut fields = all_fields
+            .iter()
             .map(|f| (f.as_index().unwrap(), &f.tmp_name))
             .collect::<Vec<_>>();
         fields.sort_by_key(|(idx, _)| idx.index);
@@ -79,8 +71,7 @@ pub fn emit_decode_struct(s: &Struct, named: bool, partial: bool)
                 }
             });
         } else {
-            return Err(syn::Error::new(s.ident.span(),
-                       "not partial compatible"));
+            return Err(syn::Error::new(s.ident.span(), "not partial compatible"));
         }
     }
     Ok(quote! {
@@ -107,9 +98,7 @@ fn decode_scalar(value: &syn::Ident, ctx: &syn::Ident) -> TokenStream {
     quote!(::kfl::traits::DecodeScalar::decode(#value, #ctx))
 }
 
-fn check_type(ident: &syn::Ident, node: &syn::Ident, ctx: &syn::Ident)
-    -> TokenStream
-{
+fn check_type(ident: &syn::Ident, node: &syn::Ident, ctx: &syn::Ident) -> TokenStream {
     let name = crate::to_kebab_case(&ident.unraw());
     quote!(::kfl::decode::check_type(#name, #node, #ctx)?;)
 }
@@ -135,9 +124,11 @@ fn check_type(ident: &syn::Ident, node: &syn::Ident, ctx: &syn::Ident)
 //     Ok(quote!())
 // }
 
-pub(crate) fn decode_arguments(s: &Struct, node: &syn::Ident, ctx: &syn::Ident)
-    -> syn::Result<TokenStream>
-    {
+pub(crate) fn decode_arguments(
+    s: &Struct,
+    node: &syn::Ident,
+    ctx: &syn::Ident,
+) -> syn::Result<TokenStream> {
     let mut decoder = Vec::new();
     let iter_args = syn::Ident::new("iter_args", Span::mixed_site());
     decoder.push(quote! {
@@ -196,9 +187,11 @@ pub(crate) fn decode_arguments(s: &Struct, node: &syn::Ident, ctx: &syn::Ident)
     Ok(quote!(#(#decoder)*))
 }
 
-pub(crate) fn decode_properties(s: &Struct, node: &syn::Ident, ctx: &syn::Ident)
-    -> syn::Result<TokenStream>
-{
+pub(crate) fn decode_properties(
+    s: &Struct,
+    node: &syn::Ident,
+    ctx: &syn::Ident,
+) -> syn::Result<TokenStream> {
     let mut declare_empty = Vec::new();
     let mut match_branches = Vec::new();
     let mut postprocess = Vec::new();
@@ -211,7 +204,9 @@ pub(crate) fn decode_properties(s: &Struct, node: &syn::Ident, ctx: &syn::Ident)
         let field = &property.field.tmp_name;
         let prop_name = &property.name;
         let seen_name = format_ident!("seen_{}", field, span = Span::mixed_site());
-        if false /* TODO property.flatten */ {
+        if false
+        /* TODO property.flatten */
+        {
             declare_empty.push(quote! {
                 let mut #field = ::std::default::Default::default();
             });
@@ -334,9 +329,7 @@ fn has_only_children(s: &Struct) -> bool {
     // && s.children.iter().all(|child| child.default.is_some())
 }
 
-fn decode_partial(s: &Struct, node: &syn::Ident, ctx: &syn::Ident)
-    -> syn::Result<TokenStream>
-{
+fn decode_partial(s: &Struct, node: &syn::Ident, ctx: &syn::Ident) -> syn::Result<TokenStream> {
     let mut branches = vec![quote! {
         if false {
             Ok(false)
@@ -393,10 +386,12 @@ fn decode_partial(s: &Struct, node: &syn::Ident, ctx: &syn::Ident)
 //     })
 // }
 
-pub(crate) fn decode_children(s: &Struct, children: &syn::Ident,
-                              ctx: &syn::Ident, err_span: Option<TokenStream>)
-    -> syn::Result<TokenStream>
-{
+pub(crate) fn decode_children(
+    s: &Struct,
+    children: &syn::Ident,
+    ctx: &syn::Ident,
+    err_span: Option<TokenStream>,
+) -> syn::Result<TokenStream> {
     let mut declare_empty = Vec::new();
     let mut branches = vec![quote! {
         if false {
@@ -460,7 +455,8 @@ pub(crate) fn decode_children(s: &Struct, children: &syn::Ident,
                 });
                 let req_msg = format!(
                     "child node for struct field `{}` is required",
-                    &field.unraw().to_string());
+                    &field.unraw().to_string()
+                );
                 if let Some(default_value) = &child_def.default {
                     let default = if let Some(expr) = default_value {
                         quote!(#expr)
@@ -511,20 +507,16 @@ pub(crate) fn decode_children(s: &Struct, children: &syn::Ident,
 }
 
 pub(crate) fn assign_extra(s: &Struct) -> syn::Result<TokenStream> {
-    let items = s.extra_fields.iter().map(|field| {
-        match field.kind {
-            ExtraKind::Auto => {
-                let name = &field.field.tmp_name;
-                quote!(let #name = ::std::default::Default::default();)
-            }
+    let items = s.extra_fields.iter().map(|field| match field.kind {
+        ExtraKind::Auto => {
+            let name = &field.field.tmp_name;
+            quote!(let #name = ::std::default::Default::default();)
         }
     });
     Ok(quote!(#(#items)*))
 }
 
-pub fn emit_encode_struct(s: &Struct, partial: bool)
-    -> syn::Result<TokenStream>
-{
+pub fn emit_encode_struct(s: &Struct, partial: bool) -> syn::Result<TokenStream> {
     let s_name = &s.ident;
     let node = syn::Ident::new("node", Span::mixed_site());
     let ctx = syn::Ident::new("ctx", Span::mixed_site());
@@ -539,8 +531,7 @@ pub fn emit_encode_struct(s: &Struct, partial: bool)
     // let encode_specials = encode_specials(&common, &node)?;
     let encode_arguments = encode_arguments(&common, &node, false)?;
     let encode_properties = encode_properties(&common, &node, false)?;
-    let encode_children_normal = encode_children(
-        &common, &node, Some(quote!(#ctx.span(&#node))))?;
+    let encode_children_normal = encode_children(&common, &node, Some(quote!(#ctx.span(&#node))))?;
     // let assign_extra = assign_extra(&common)?;
 
     let mut extra_traits = Vec::new();
@@ -600,9 +591,11 @@ fn declare_node(node: &syn::Ident, name: &syn::Ident) -> TokenStream {
     quote!(let mut #node = ::kfl::ast::Node::new(#name);)
 }
 
-pub(crate) fn encode_arguments(s: &Common, node: &syn::Ident, variant: bool)
-    -> syn::Result<TokenStream>
-{
+pub(crate) fn encode_arguments(
+    s: &Common,
+    node: &syn::Ident,
+    variant: bool,
+) -> syn::Result<TokenStream> {
     let ctx = s.ctx;
     let mut encoder = Vec::new();
     let scalar = syn::Ident::new("scalar", Span::mixed_site());
@@ -681,9 +674,11 @@ pub(crate) fn encode_arguments(s: &Common, node: &syn::Ident, variant: bool)
 }
 
 // TODO(rnarkk) named and unnamed
-pub(crate) fn encode_properties(s: &Common, node: &syn::Ident, variant: bool)
-    -> syn::Result<TokenStream>
-{
+pub(crate) fn encode_properties(
+    s: &Common,
+    node: &syn::Ident,
+    variant: bool,
+) -> syn::Result<TokenStream> {
     // let mut preprocess = Vec::new();
     let mut branches = Vec::new();
 
@@ -703,7 +698,9 @@ pub(crate) fn encode_properties(s: &Common, node: &syn::Ident, variant: bool)
         let name = &property.name;
         let ty = &property.field.ty;
         // let seen_name = format_ident!("seen_{}", field, span = Span::mixed_site());
-        if false /* TODO property.flatten */ {
+        if false
+        /* TODO property.flatten */
+        {
             // declare_empty.push(quote! {
             //     let mut #field = ::std::default::Default::default();
             // });
@@ -774,14 +771,14 @@ pub(crate) fn encode_properties(s: &Common, node: &syn::Ident, variant: bool)
         //     let #field = #field.into_iter().collect();
         // });
     } else {
-    //     match_branches.push(quote! {
-    //         #name_str => {
-    //             return Err(::kfl::errors::EncodeError::unexpected(
-    //                 #ctx.span(&#name), "property",
-    //                 format!("unexpected property `{}`",
-    //                         #name_str.escape_default())));
-    //         }
-    //     });
+        // match_branches.push(quote! {
+        //     #name_str => {
+        //         return Err(::kfl::errors::EncodeError::unexpected(
+        //             #ctx.span(&#name), "property",
+        //             format!("unexpected property `{}`",
+        //                     #name_str.escape_default())));
+        //     }
+        // });
     }
     Ok(quote! {
         // #(#preprocess)*
@@ -805,9 +802,11 @@ fn encode_partial(s: &Common, node: &syn::Ident) -> syn::Result<TokenStream> {
     Ok(quote!(#(#branches)*))
 }
 
-pub(crate) fn encode_children(s: &Common, node: &syn::Ident, _err_span: Option<TokenStream>)
-    -> syn::Result<TokenStream>
-{
+pub(crate) fn encode_children(
+    s: &Common,
+    node: &syn::Ident,
+    _err_span: Option<TokenStream>,
+) -> syn::Result<TokenStream> {
     if s.object.children.is_empty() {
         return Ok(quote!());
     }

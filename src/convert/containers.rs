@@ -1,19 +1,12 @@
 //! Convert container types.
 
-use alloc::{
-    boxed::Box,
-    format,
-    rc::Rc,
-    sync::Arc,
-    vec,
-    vec::Vec
-};
+use alloc::{boxed::Box, format, rc::Rc, sync::Arc, vec, vec::Vec};
 use core::mem;
 
 use crate::{
     ast::{Node, Scalar},
     context::Context,
-    errors::{DecodeError, ExpectedType, EncodeError},
+    errors::{DecodeError, EncodeError, ExpectedType},
     traits::{Decode, DecodePartial, DecodeScalar},
     traits::{Encode, EncodePartial, EncodeScalar},
 };
@@ -25,9 +18,7 @@ impl<T: Decode> Decode for Box<T> {
 }
 
 impl<T: DecodePartial> DecodePartial for Box<T> {
-    fn decode_partial(&mut self, node: &Node, ctx: &mut Context)
-        -> Result<bool, DecodeError>
-    {
+    fn decode_partial(&mut self, node: &Node, ctx: &mut Context) -> Result<bool, DecodeError> {
         (**self).decode_partial(node, ctx)
     }
     // fn insert_property(&mut self,
@@ -52,10 +43,9 @@ impl<T: Decode> Decode for Arc<T> {
 }
 
 impl<T: DecodePartial> DecodePartial for Arc<T> {
-    fn decode_partial(&mut self, node: &Node, ctx: &mut Context)
-        -> Result<bool, DecodeError>
-    {
-        Arc::get_mut(self).expect("no Arc clone yet")
+    fn decode_partial(&mut self, node: &Node, ctx: &mut Context) -> Result<bool, DecodeError> {
+        Arc::get_mut(self)
+            .expect("no Arc clone yet")
             .decode_partial(node, ctx)
     }
     // fn insert_property(&mut self,
@@ -81,10 +71,9 @@ impl<T: Decode> Decode for Rc<T> {
 }
 
 impl<T: DecodePartial> DecodePartial for Rc<T> {
-    fn decode_partial(&mut self, node: &Node, ctx: &mut Context)
-        -> Result<bool, DecodeError>
-    {
-        Rc::get_mut(self).expect("no Rc clone yet")
+    fn decode_partial(&mut self, node: &Node, ctx: &mut Context) -> Result<bool, DecodeError> {
+        Rc::get_mut(self)
+            .expect("no Rc clone yet")
             .decode_partial(node, ctx)
     }
     // fn insert_property(&mut self,
@@ -110,25 +99,29 @@ impl<T: Decode> Decode for Option<T> {
 }
 
 impl<T: Decode> DecodePartial for Option<T> {
-    fn decode_partial(&mut self, node: &Node, ctx: &mut Context)
-        -> Result<bool, DecodeError>
-    {
-        let slf = mem::take(self);  /* (1) */
+    fn decode_partial(&mut self, node: &Node, ctx: &mut Context) -> Result<bool, DecodeError> {
+        let slf = mem::take(self); /* (1) */
         let result = <Self as Decode>::decode(node, ctx);
         match (slf, result) {
-            (None, Ok(None)) => Ok(true),  /* no-op */
+            (None, Ok(None)) => Ok(true), /* no-op */
             (None, Ok(value)) => {
                 *self = value;
                 Ok(true)
             }
             (slf, Err(_)) => {
-                *self = slf;  /* TODO improve this with line (1) */
+                *self = slf; /* TODO improve this with line (1) */
                 Ok(false)
-            },
+            }
             (_, _) => {
-                let dup_err = format!("duplicate node `{}`, single node expected", node.node_name.as_ref());
-                Err(DecodeError::unexpected(ctx.span(&node.node_name), "node",
-                    dup_err))
+                let dup_err = format!(
+                    "duplicate node `{}`, single node expected",
+                    node.node_name.as_ref()
+                );
+                Err(DecodeError::unexpected(
+                    ctx.span(&node.node_name),
+                    "node",
+                    dup_err,
+                ))
             }
         }
     }
@@ -147,15 +140,13 @@ impl<T: Encode> Encode for Option<T> {
     fn encode(&self, ctx: &mut Context) -> Result<Node, EncodeError> {
         match self {
             None => panic!(),
-            Some(t) => <T as Encode>::encode(t, ctx)
+            Some(t) => <T as Encode>::encode(t, ctx),
         }
     }
 }
 
 impl<T: Encode> EncodePartial for Option<T> {
-    fn encode_partial(&self, node: &mut Node, ctx: &mut Context)
-        -> Result<(), EncodeError>
-    {
+    fn encode_partial(&self, node: &mut Node, ctx: &mut Context) -> Result<(), EncodeError> {
         let mut children = mem::take(&mut node.children).unwrap_or_default();
         match self {
             None => panic!(),
@@ -172,7 +163,10 @@ impl<T: Encode> EncodePartial for Option<T> {
 impl<T: EncodeScalar> EncodeScalar for Option<T> {
     fn encode(&self, ctx: &mut Context) -> Result<Scalar, EncodeError> {
         match &self {
-            None => Ok(Scalar { type_name: None, literal: "null".into() }),
+            None => Ok(Scalar {
+                type_name: None,
+                literal: "null".into(),
+            }),
             Some(scalar) => <T as EncodeScalar>::encode(scalar, ctx),
         }
     }
@@ -185,15 +179,13 @@ impl<T: Decode> Decode for Vec<T> {
 }
 
 impl<T: Decode> DecodePartial for Vec<T> {
-    fn decode_partial(&mut self, node: &Node, ctx: &mut Context)
-        -> Result<bool, DecodeError>
-    {
+    fn decode_partial(&mut self, node: &Node, ctx: &mut Context) -> Result<bool, DecodeError> {
         match <T as Decode>::decode(node, ctx) {
             Ok(value) => {
                 self.push(value);
                 Ok(true)
             }
-            Err(e) => Err(e)
+            Err(e) => Err(e),
         }
     }
 }
@@ -214,9 +206,7 @@ impl<T: Decode> DecodePartial for Vec<T> {
 // }
 
 impl<T: Encode> EncodePartial for Vec<T> {
-    fn encode_partial(&self, node: &mut Node, ctx: &mut Context)
-        -> Result<(), EncodeError>
-    {
+    fn encode_partial(&self, node: &mut Node, ctx: &mut Context) -> Result<(), EncodeError> {
         let mut children = mem::take(&mut node.children).unwrap_or_default();
         for item in self.iter() {
             let child = <T as Encode>::encode(item, ctx)?;
@@ -241,21 +231,24 @@ impl DecodeScalar for Vec<u8> {
                     });
                 }
             }
-        } else { false };
+        } else {
+            false
+        };
         if is_base64 {
-            #[cfg(feature = "base64")] {
-                use base64::{Engine as _,
-                             engine::general_purpose::STANDARD};
+            #[cfg(feature = "base64")]
+            {
+                use base64::{engine::general_purpose::STANDARD, Engine as _};
                 match STANDARD.decode(scalar.literal.as_bytes()) {
                     Ok(vec) => Ok(vec),
-                    Err(e) => {
-                        Err(DecodeError::conversion(ctx.span(&scalar), e))
-                    }
+                    Err(e) => Err(DecodeError::conversion(ctx.span(&scalar), e)),
                 }
             }
-            #[cfg(not(feature = "base64"))] {
-                Err(DecodeError::unsupported(ctx.span(&value),
-                    "base64 support is not compiled in"))
+            #[cfg(not(feature = "base64"))]
+            {
+                Err(DecodeError::unsupported(
+                    ctx.span(&value),
+                    "base64 support is not compiled in",
+                ))
             }
         } else {
             Ok(scalar.literal.as_bytes().to_vec())

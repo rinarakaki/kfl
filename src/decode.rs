@@ -1,25 +1,23 @@
 //! Used by derive macro.
 
+use crate::{ast::Node, context::Context, errors::DecodeError};
 use alloc::format;
-use crate::{
-    ast::Node,
-    context::Context,
-    errors::DecodeError
-};
 
 /// TODO
-pub fn check_type(ident: &str, node: &Node, ctx: &Context)
-    -> Result<(), DecodeError>
-{
+pub fn check_type(ident: &str, node: &Node, ctx: &Context) -> Result<(), DecodeError> {
     if node.type_name.is_some() {
         return Err(DecodeError::unexpected(
-                   ctx.span(&node), "type name",
-                   "no type name expected for this node"));
+            ctx.span(&node),
+            "type name",
+            "no type name expected for this node",
+        ));
     }
     if node.node_name.as_ref() != ident {
-        return Err(DecodeError::unexpected(ctx.span(&node),
-                   "node", format!("unexpected node `{}`",
-                   node.node_name.as_ref())));
+        return Err(DecodeError::unexpected(
+            ctx.span(&node),
+            "node",
+            format!("unexpected node `{}`", node.node_name.as_ref()),
+        ));
     }
     Ok(())
 }

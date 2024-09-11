@@ -1,24 +1,20 @@
 use alloc::{
     borrow::ToOwned,
     boxed::Box,
-    collections::{BTreeSet, BTreeMap},
+    collections::{BTreeMap, BTreeSet},
     string::{String, ToString},
-    vec::Vec
+    vec::Vec,
 };
 use core::fmt::{Debug, Pointer};
 
-use chumsky::{
-    extra::Full,
-    input::Input,
-    prelude::*,
-};
+use chumsky::{extra::Full, input::Input, prelude::*};
 
 use crate::{
     ast::{Node, Scalar},
     context::Context,
     errors::{ParseError, TokenFormat},
     own,
-    span::Span
+    span::Span,
 };
 
 type I<'a> = &'a str;
@@ -26,75 +22,86 @@ type Extra = Full<ParseError, Context, ()>;
 
 fn begin_comment<'a>(which: char) -> impl Parser<'a, I<'a>, (), Extra> + Clone {
     just('/')
-    // .map_err(|e: ParseError| e.with_no_expected())
-    .ignore_then(just(which).ignored())
+        // .map_err(|e: ParseError| e.with_no_expected())
+        .ignore_then(just(which).ignored())
 }
 
 fn newline<'a>() -> impl Parser<'a, I<'a>, (), Extra> + Clone {
     just('\r')
         .or_not()
         .ignore_then(just('\n'))
-        .or(just('\r'))  // Carriage return
-        .or(just('\x0C'))  // Form feed
-        .or(just('\u{0085}'))  // Next line
-        .or(just('\u{2028}'))  // Line separator
-        .or(just('\u{2029}'))  // Paragraph separator
+        .or(just('\r')) // Carriage return
+        .or(just('\x0C')) // Form feed
+        .or(just('\u{0085}')) // Next line
+        .or(just('\u{2028}')) // Line separator
+        .or(just('\u{2029}')) // Paragraph separator
         .ignored()
-    .map_err(|e: ParseError| e.with_expected_kind("newline"))
+        .map_err(|e: ParseError| e.with_expected_kind("newline"))
 }
 
 fn ws_char<'a>() -> impl Parser<'a, I<'a>, (), Extra> + Clone {
-    any().filter(|c| matches!(c,
-        '\t' | ' ' | '\u{00a0}' | '\u{1680}' |
-        '\u{2000}'..='\u{200A}' |
-        '\u{202F}' | '\u{205F}' | '\u{3000}' |
-        '\u{FEFF}'
-    ))
-    .ignored()
+    any()
+        .filter(|c| {
+            matches!(
+                c,
+                '\t' | ' ' | '\u{00a0}' | '\u{1680}' | '\u{2000}'
+                    ..='\u{200A}' | '\u{202F}' | '\u{205F}' | '\u{3000}' | '\u{FEFF}'
+            )
+        })
+        .ignored()
 }
 
 fn id_char<'a>() -> impl Parser<'a, I<'a>, char, Extra> + Clone {
-    any().filter(|c| !matches!(c,
-        '\u{0000}'..='\u{0021}' |
-        '\\'|'/'|'('|')'|'{'|'}'|'<'|'>'|';'|'['|']'|'='|','|'"' |
-        // whitespace, excluding 0x20
-        '\u{00a0}' | '\u{1680}' |
-        '\u{2000}'..='\u{200A}' |
-        '\u{202F}' | '\u{205F}' | '\u{3000}' |
-        // newline (excluding <= 0x20)
-        '\u{0085}' | '\u{2028}' | '\u{2029}'
-    ))
-    .map_err(|e: ParseError| e.with_expected_kind("letter"))
+    any()
+        .filter(|c| {
+            !matches!(c,
+                '\u{0000}'..='\u{0021}' |
+                '\\'|'/'|'('|')'|'{'|'}'|'<'|'>'|';'|'['|']'|'='|','|'"' |
+                // whitespace, excluding 0x20
+                '\u{00a0}' | '\u{1680}' |
+                '\u{2000}'..='\u{200A}' |
+                '\u{202F}' | '\u{205F}' | '\u{3000}' |
+                // newline (excluding <= 0x20)
+                '\u{0085}' | '\u{2028}' | '\u{2029}'
+            )
+        })
+        .map_err(|e: ParseError| e.with_expected_kind("letter"))
 }
 
 fn id_sans_dig<'a>() -> impl Parser<'a, I<'a>, char, Extra> + Clone {
-    any().filter(|c| !matches!(c,
-        '0'..='9' |
-        '\u{0000}'..='\u{0020}' |
-        '\\'|'/'|'('|')'|'{'|'}'|'<'|'>'|';'|'['|']'|'='|','|'"' |
-        // whitespace, excluding 0x20
-        '\u{00a0}' | '\u{1680}' |
-        '\u{2000}'..='\u{200A}' |
-        '\u{202F}' | '\u{205F}' | '\u{3000}' |
-        // newline (excluding <= 0x20)
-        '\u{0085}' | '\u{2028}' | '\u{2029}'
-    ))
-    .map_err(|e: ParseError| e.with_expected_kind("letter"))
+    any()
+        .filter(|c| {
+            !matches!(c,
+                '0'..='9' |
+                '\u{0000}'..='\u{0020}' |
+                '\\'|'/'|'('|')'|'{'|'}'|'<'|'>'|';'|'['|']'|'='|','|'"' |
+                // whitespace, excluding 0x20
+                '\u{00a0}' | '\u{1680}' |
+                '\u{2000}'..='\u{200A}' |
+                '\u{202F}' | '\u{205F}' | '\u{3000}' |
+                // newline (excluding <= 0x20)
+                '\u{0085}' | '\u{2028}' | '\u{2029}'
+            )
+        })
+        .map_err(|e: ParseError| e.with_expected_kind("letter"))
 }
 
 fn id_sans_sign_dig<'a>() -> impl Parser<'a, I<'a>, char, Extra> + Clone {
-    any().filter(|c| !matches!(c,
-        '-'| '+' | '0'..='9' |
-        '\u{0000}'..='\u{0020}' |
-        '\\'|'/'|'('|')'|'{'|'}'|'<'|'>'|';'|'['|']'|'='|','|'"' |
-        // whitespace, excluding 0x20
-        '\u{00a0}' | '\u{1680}' |
-        '\u{2000}'..='\u{200A}' |
-        '\u{202F}' | '\u{205F}' | '\u{3000}' |
-        // newline (excluding <= 0x20)
-        '\u{0085}' | '\u{2028}' | '\u{2029}'
-    ))
-    .map_err(|e: ParseError| e.with_expected_kind("letter"))
+    any()
+        .filter(|c| {
+            !matches!(c,
+                '-'| '+' | '0'..='9' |
+                '\u{0000}'..='\u{0020}' |
+                '\\'|'/'|'('|')'|'{'|'}'|'<'|'>'|';'|'['|']'|'='|','|'"' |
+                // whitespace, excluding 0x20
+                '\u{00a0}' | '\u{1680}' |
+                '\u{2000}'..='\u{200A}' |
+                '\u{202F}' | '\u{205F}' | '\u{3000}' |
+                // newline (excluding <= 0x20)
+                '\u{0085}' | '\u{2028}' | '\u{2029}'
+            )
+        })
+        .map_err(|e: ParseError| e.with_expected_kind("letter"))
 }
 
 fn ws<'a>() -> impl Parser<'a, I<'a>, (), Extra> + Clone {
@@ -104,8 +111,8 @@ fn ws<'a>() -> impl Parser<'a, I<'a>, (), Extra> + Clone {
 
 fn comment<'a>() -> impl Parser<'a, I<'a>, (), Extra> + Clone {
     begin_comment('/')
-    .then(any().repeated().then(newline().or(end())))
-    .ignored()
+        .then(any().repeated().then(newline().or(end())))
+        .ignored()
 }
 
 fn ml_comment<'a>() -> impl Parser<'a, I<'a>, (), Extra> + Clone {
@@ -114,13 +121,20 @@ fn ml_comment<'a>() -> impl Parser<'a, I<'a>, (), Extra> + Clone {
             comment,
             none_of('*').ignored(),
             just('*').then_ignore(none_of('/').rewind()).ignored(),
-        )).repeated().ignored()
+        ))
+        .repeated()
+        .ignored()
         .delimited_by(begin_comment('*'), just("*/"))
     })
     .map_err_with_state(|err, span, _| {
         let span = Span::from(span);
-        if matches!(&err, ParseError::Unexpected { found: TokenFormat::Eoi, .. }) &&
-           span.len() > 2
+        if matches!(
+            &err,
+            ParseError::Unexpected {
+                found: TokenFormat::Eoi,
+                ..
+            }
+        ) && span.len() > 2
         {
             err.merge(ParseError::Unclosed {
                 label: "comment",
@@ -139,33 +153,36 @@ fn ml_comment<'a>() -> impl Parser<'a, I<'a>, (), Extra> + Clone {
 
 fn raw_string<'a>() -> impl Parser<'a, I<'a>, Box<str>, Extra> + Clone {
     just('r')
-    .ignore_then(just('#').repeated().count())
-    .then_ignore(just('"'))
-    .ignore_with_ctx(
-        any()
-        .repeated()
+        .ignore_then(just('#').repeated().count())
         .then_ignore(just('"'))
-        .then_ignore(just('#').repeated().configure(|config, ctx| config.exactly(*ctx)))
-        .to_slice()
-        .map(|v: &str| own!(v))
-        // .configure(|config, ctx| {
-        //     config.map_err_with_state(move |e: ParseError, span, _| {
-        //         let span = Span::from(span);
-        //         if matches!(&e, ParseError::Unexpected { found: TokenFormat::Eoi, .. }) {
-        //             e.merge(ParseError::Unclosed {
-        //                 label: "raw string",
-        //                 opened_at: span.before_start(*ctx + 2),
-        //                 opened: TokenFormat::OpenRaw(*ctx),
-        //                 expected_at: span.at_end(),
-        //                 expected: TokenFormat::CloseRaw(*ctx),
-        //                 found: None.into(),
-        //             })
-        //         } else {
-        //             e
-        //         }
-        //     })
-        // })
-    )
+        .ignore_with_ctx(
+            any()
+                .repeated()
+                .then_ignore(just('"'))
+                .then_ignore(
+                    just('#')
+                        .repeated()
+                        .configure(|config, ctx| config.exactly(*ctx)),
+                )
+                .to_slice()
+                .map(|v: &str| own!(v)), // .configure(|config, ctx| {
+                                         //     config.map_err_with_state(move |e: ParseError, span, _| {
+                                         //         let span = Span::from(span);
+                                         //         if matches!(&e, ParseError::Unexpected { found: TokenFormat::Eoi, .. }) {
+                                         //             e.merge(ParseError::Unclosed {
+                                         //                 label: "raw string",
+                                         //                 opened_at: span.before_start(*ctx + 2),
+                                         //                 opened: TokenFormat::OpenRaw(*ctx),
+                                         //                 expected_at: span.at_end(),
+                                         //                 expected: TokenFormat::CloseRaw(*ctx),
+                                         //                 found: None.into(),
+                                         //             })
+                                         //         } else {
+                                         //             e
+                                         //         }
+                                         //     })
+                                         // })
+        )
 }
 
 fn string<'a>() -> impl Parser<'a, I<'a>, Box<str>, Extra> + Clone {
@@ -178,90 +195,99 @@ fn expected_kind(s: &'static str) -> BTreeSet<TokenFormat> {
 
 fn esc_char<'a>() -> impl Parser<'a, I<'a>, char, Extra> + Clone {
     any()
-    .try_map(|c, span: <I as Input>::Span| match c {
-        '"'|'\\'|'/' => Ok(c),
-        'b' => Ok('\u{0008}'),
-        'f' => Ok('\u{000C}'),
-        'n' => Ok('\n'),
-        'r' => Ok('\r'),
-        't' => Ok('\t'),
-        c => {
-            Err(ParseError::Unexpected {
-            label: Some("invalid escape char"),
-            span: Span(span.start, span.end),
-            found: c.into(),
-            expected: "\"\\/bfnrt".chars().map(|c| c.into()).collect(),
-        })}
-    })
-    .or(
-        just('u')
-        .ignore_then(
+        .try_map(|c, span: <I as Input>::Span| match c {
+            '"' | '\\' | '/' => Ok(c),
+            'b' => Ok('\u{0008}'),
+            'f' => Ok('\u{000C}'),
+            'n' => Ok('\n'),
+            'r' => Ok('\r'),
+            't' => Ok('\t'),
+            c => Err(ParseError::Unexpected {
+                label: Some("invalid escape char"),
+                span: Span(span.start, span.end),
+                found: c.into(),
+                expected: "\"\\/bfnrt".chars().map(|c| c.into()).collect(),
+            }),
+        })
+        .or(just('u').ignore_then(
             any()
-            .try_map(|c: char, span: <I as Input>::Span|
-                c.is_ascii_hexdigit().then_some(c)
-                .ok_or_else(|| {
-                    ParseError::Unexpected {
-                    label: Some("unexpected character"),
-                    span: Span::from(span),
-                    found: c.into(),
-                    expected: expected_kind("hexadecimal digit"),
-                }}))
-            .repeated()
-            .at_least(1)
-            .at_most(6)
-            .delimited_by(just('{'), just('}'))
-            .to_slice()
-            .try_map(|hex_chars: &str, span: <I as Input>::Span| {
-                let s = hex_chars.chars().collect::<String>();
-                let c =
-                    u32::from_str_radix(&s, 16).map_err(|e| e.to_string())
-                    .and_then(|n| char::try_from(n).map_err(|e| e.to_string()))
-                    .map_err(|e| ParseError::Message {
-                        label: Some("invalid character code"),
-                        span: Span(span.start, span.end),
-                        message: e.to_string(),
-                    })?;
-                Ok(c)
-            })
-            // .recover_with(
-            //     skip_until(
-            //         one_of(['}', '"', '\\']).map(|_| '\0')
-            //     )
-            // )
-        )
-    )
+                .try_map(|c: char, span: <I as Input>::Span| {
+                    c.is_ascii_hexdigit()
+                        .then_some(c)
+                        .ok_or_else(|| ParseError::Unexpected {
+                            label: Some("unexpected character"),
+                            span: Span::from(span),
+                            found: c.into(),
+                            expected: expected_kind("hexadecimal digit"),
+                        })
+                })
+                .repeated()
+                .at_least(1)
+                .at_most(6)
+                .delimited_by(just('{'), just('}'))
+                .to_slice()
+                .try_map(|hex_chars: &str, span: <I as Input>::Span| {
+                    let s = hex_chars.chars().collect::<String>();
+                    let c = u32::from_str_radix(&s, 16)
+                        .map_err(|e| e.to_string())
+                        .and_then(|n| char::try_from(n).map_err(|e| e.to_string()))
+                        .map_err(|e| ParseError::Message {
+                            label: Some("invalid character code"),
+                            span: Span(span.start, span.end),
+                            message: e.to_string(),
+                        })?;
+                    Ok(c)
+                }), // .recover_with(
+                    //     skip_until(
+                    //         one_of(['}', '"', '\\']).map(|_| '\0')
+                    //     )
+                    // )
+        ))
 }
 
 fn escaped_string<'a>() -> impl Parser<'a, I<'a>, Box<str>, Extra> + Clone {
     just('"')
-    .ignore_then(
-        any().filter(|&c| c != '"' && c != '\\')
-        .or(just('\\').ignore_then(esc_char()))
-        .repeated().to_slice().map(|v| own!(v)))
-    .then_ignore(just('"'))
-    .map_err_with_state(|err: ParseError, span, _| {
-        if matches!(&err, ParseError::Unexpected { found: TokenFormat::Eoi, .. })
-        {
-            err.merge(ParseError::Unclosed {
-                label: "string",
-                opened_at: Span(span.start, span.start + 1),  //span.before_start(1),
-                opened: '"'.into(),
-                expected_at: Span(span.end, span.end),
-                expected: '"'.into(),
-                found: None.into(),
-            })
-        } else {
-            err
-        }
-    })
+        .ignore_then(
+            any()
+                .filter(|&c| c != '"' && c != '\\')
+                .or(just('\\').ignore_then(esc_char()))
+                .repeated()
+                .to_slice()
+                .map(|v| own!(v)),
+        )
+        .then_ignore(just('"'))
+        .map_err_with_state(|err: ParseError, span, _| {
+            if matches!(
+                &err,
+                ParseError::Unexpected {
+                    found: TokenFormat::Eoi,
+                    ..
+                }
+            ) {
+                err.merge(ParseError::Unclosed {
+                    label: "string",
+                    opened_at: Span(span.start, span.start + 1), //span.before_start(1),
+                    opened: '"'.into(),
+                    expected_at: Span(span.end, span.end),
+                    expected: '"'.into(),
+                    found: None.into(),
+                })
+            } else {
+                err
+            }
+        })
 }
 
 fn bare_ident<'a>() -> impl Parser<'a, I<'a>, Box<str>, Extra> + Clone {
     let sign = just('+').or(just('-'));
     choice((
-        sign.then(id_sans_dig().then(id_char().repeated())).to_slice(),
+        sign.then(id_sans_dig().then(id_char().repeated()))
+            .to_slice(),
         sign.repeated().exactly(1).to_slice(),
-        sign.repeated().then(id_sans_sign_dig()).then(id_char().repeated()).to_slice()
+        sign.repeated()
+            .then(id_sans_sign_dig())
+            .then(id_char().repeated())
+            .to_slice(),
     ))
     .to_slice()
     .map(|s| own!(s))
@@ -272,15 +298,22 @@ fn ident<'a>() -> impl Parser<'a, I<'a>, Box<str>, Extra> + Clone {
 }
 
 fn literal<'a>() -> impl Parser<'a, I<'a>, Box<str>, Extra> + Clone {
-    string()
-    .or(
-        any()
-        .filter(|c| c != &' ' && c != &'{' && c != &'}' && c != &'\n' && c != &'(' && c != &')' && c != &'\\' && c != &'=' && c != &'"')
+    string().or(any()
+        .filter(|c| {
+            c != &' '
+                && c != &'{'
+                && c != &'}'
+                && c != &'\n'
+                && c != &'('
+                && c != &')'
+                && c != &'\\'
+                && c != &'='
+                && c != &'"'
+        })
         .repeated()
         .at_least(1)
         .to_slice()
-        .map(|v: &str| own!(v))
-    )
+        .map(|v: &str| own!(v)))
 }
 
 fn type_name<'a>() -> impl Parser<'a, I<'a>, Box<str>, Extra> + Clone {
@@ -288,8 +321,9 @@ fn type_name<'a>() -> impl Parser<'a, I<'a>, Box<str>, Extra> + Clone {
 }
 
 fn spanned<'a, T, P>(p: P) -> impl Parser<'a, I<'a>, T, Extra> + Clone
-    where T: Pointer + Debug,
-          P: Parser<'a, I<'a>, T, Extra> + Clone,
+where
+    T: Pointer + Debug,
+    P: Parser<'a, I<'a>, T, Extra> + Clone,
 {
     p.map_with(|value, extra| {
         let span = extra.span();
@@ -320,22 +354,30 @@ enum PropOrArg {
 }
 
 fn type_name_value<'a>() -> impl Parser<'a, I<'a>, Scalar, Extra> + Clone {
-    type_name().then(literal())
-    .map(|(type_name, literal)| Scalar { type_name: Some(type_name), literal })
+    type_name()
+        .then(literal())
+        .map(|(type_name, literal)| Scalar {
+            type_name: Some(type_name),
+            literal,
+        })
 }
 
 fn scalar<'a>() -> impl Parser<'a, I<'a>, Scalar, Extra> + Clone {
-    type_name_value()
-    .or(literal().map(|literal| Scalar { type_name: None, literal }))
+    type_name_value().or(literal().map(|literal| Scalar {
+        type_name: None,
+        literal,
+    }))
 }
 
 fn prop_or_arg_inner<'a>() -> impl Parser<'a, I<'a>, PropOrArg, Extra> + Clone {
     use PropOrArg::*;
     choice((
-        bare_ident().then(just('=').ignore_then(scalar()))
+        bare_ident()
+            .then(just('=').ignore_then(scalar()))
             .map(|(name, scalar)| Prop(name, scalar)),
-        string().then(just('=').ignore_then(scalar())).map(
-            |(name, scalar)| Prop(name, scalar)),
+        string()
+            .then(just('=').ignore_then(scalar()))
+            .map(|(name, scalar)| Prop(name, scalar)),
         scalar().map(Arg),
     ))
 }
@@ -345,7 +387,7 @@ fn prop_or_arg<'a>() -> impl Parser<'a, I<'a>, PropOrArg, Extra> + Clone {
         .ignore_then(node_space().repeated())
         .ignore_then(prop_or_arg_inner())
         .map(|_| PropOrArg::Ignore)
-    .or(prop_or_arg_inner())
+        .or(prop_or_arg_inner())
 }
 
 fn line_space<'a>() -> impl Parser<'a, I<'a>, (), Extra> + Clone {
@@ -355,27 +397,30 @@ fn line_space<'a>() -> impl Parser<'a, I<'a>, (), Extra> + Clone {
 fn nodes<'a>() -> impl Parser<'a, I<'a>, Vec<Node>, Extra> {
     use PropOrArg::*;
     recursive(|nodes| {
-        let braced_nodes =
-            just('{')
-            .ignore_then(nodes
-                .then_ignore(just('}'))
-                .map_err_with_state(|err, span, _| {
-                    if matches!(&err, ParseError::Unexpected { found: TokenFormat::Eoi, .. })
-                    {
-                        let span = Span::from(span);
-                        err.merge(ParseError::Unclosed {
-                            label: "curly braces",
-                            // we know it's `{` at the start of the span
-                            opened_at: span.before_start(1),
-                            opened: '{'.into(),
-                            expected_at: span.at_end(),
-                            expected: '}'.into(),
-                            found: None.into(),
-                        })
-                    } else {
-                        err
+        let braced_nodes = just('{').ignore_then(nodes.then_ignore(just('}')).map_err_with_state(
+            |err, span, _| {
+                if matches!(
+                    &err,
+                    ParseError::Unexpected {
+                        found: TokenFormat::Eoi,
+                        ..
                     }
-                }));
+                ) {
+                    let span = Span::from(span);
+                    err.merge(ParseError::Unclosed {
+                        label: "curly braces",
+                        // we know it's `{` at the start of the span
+                        opened_at: span.before_start(1),
+                        opened: '{'.into(),
+                        expected_at: span.at_end(),
+                        expected: '}'.into(),
+                        found: None.into(),
+                    })
+                } else {
+                    err
+                }
+            },
+        ));
 
         let node
             /* type_name */
@@ -425,19 +470,28 @@ fn nodes<'a>() -> impl Parser<'a, I<'a>, Vec<Node>, Extra> {
             });
 
         // comment
-        begin_comment('-').then_ignore(node_space().repeated()).or_not()
-        // node
-        .then(spanned(node))
+        begin_comment('-')
+            .then_ignore(node_space().repeated())
+            .or_not()
+            // node
+            .then(spanned(node))
             .separated_by(line_space().repeated())
-            .allow_leading().allow_trailing()
+            .allow_leading()
+            .allow_trailing()
             .collect::<Vec<(Option<()>, Node)>>()
-            .map(|vec| vec.into_iter().filter_map(|(comment, node)| {
-                if comment.is_none() {
-                    Some(node)
-                } else {
-                    None
-                }
-            }).collect())
+            .map(|vec| {
+                vec.into_iter()
+                    .filter_map(
+                        |(comment, node)| {
+                            if comment.is_none() {
+                                Some(node)
+                            } else {
+                                None
+                            }
+                        },
+                    )
+                    .collect()
+            })
     })
 }
 
@@ -449,17 +503,17 @@ pub(crate) fn document<'a>() -> impl Parser<'a, I<'a>, Vec<Node>, Extra> {
 #[cfg(test)]
 mod test {
     extern crate std;
-    use alloc::{borrow::ToOwned, string::String, vec::Vec};
-    use chumsky::{
-        prelude::*,
-        extra::Full
+    use super::nodes;
+    use super::{
+        bare_ident, comment, ident, literal, ml_comment, prop_or_arg_inner, string, type_name,
+        type_name_value, ws,
     };
-    use miette::NamedSource;
     use crate::ast::Scalar;
     use crate::context::Context;
     use crate::errors::{Error, ParseError};
-    use super::{ws, comment, ml_comment, string, ident, bare_ident, literal, type_name, type_name_value, prop_or_arg_inner};
-    use super::{nodes};
+    use alloc::{borrow::ToOwned, string::String, vec::Vec};
+    use chumsky::{extra::Full, prelude::*};
+    use miette::NamedSource;
 
     type Extra = Full<ParseError, Context, ()>;
 
@@ -476,25 +530,29 @@ mod test {
     }
 
     fn parse<'a, P, T>(p: P, input: &'a str) -> Result<T, String>
-        where P: Parser<'a, &'a str, T, Extra>
+    where
+        P: Parser<'a, &'a str, T, Extra>,
     {
         p.then_ignore(end())
-        .parse(input).into_result()
-        .map_err(|errors| {
-            let source = input.to_owned() + " ";
-            let e = Error {
-                source_code: NamedSource::new("<test>", source),
-                errors: errors.into_iter().map(Into::into).collect(),
-            };
-            let mut buf = String::with_capacity(512);
-            miette::GraphicalReportHandler::new()
-                .render_report(&mut buf, &e).unwrap();
-            std::println!("{}", buf);
-            buf.truncate(0);
-            miette::JSONReportHandler::new()
-                .render_report(&mut buf, &e).unwrap();
-            buf
-        })
+            .parse(input)
+            .into_result()
+            .map_err(|errors| {
+                let source = input.to_owned() + " ";
+                let e = Error {
+                    source_code: NamedSource::new("<test>", source),
+                    errors: errors.into_iter().map(Into::into).collect(),
+                };
+                let mut buf = String::with_capacity(512);
+                miette::GraphicalReportHandler::new()
+                    .render_report(&mut buf, &e)
+                    .unwrap();
+                std::println!("{}", buf);
+                buf.truncate(0);
+                miette::JSONReportHandler::new()
+                    .render_report(&mut buf, &e)
+                    .unwrap();
+                buf
+            })
     }
 
     #[test]
@@ -834,10 +892,14 @@ mod test {
         assert_eq!(&*parse(ident(), "+hello").unwrap(), "+hello");
         assert_eq!(&*parse(ident(), "-A").unwrap(), "-A");
         assert_eq!(&*parse(ident(), "+b").unwrap(), "+b");
-        assert_eq!(&*parse(ident().then_ignore(ws()), "adef   ").unwrap(),
-                   "adef");
-        assert_eq!(&*parse(ident().then_ignore(ws()), "a123@   ").unwrap(),
-                   "a123@");
+        assert_eq!(
+            &*parse(ident().then_ignore(ws()), "adef   ").unwrap(),
+            "adef"
+        );
+        assert_eq!(
+            &*parse(ident().then_ignore(ws()), "a123@   ").unwrap(),
+            "a123@"
+        );
         parse(ident(), "1abc").unwrap_err();
         parse(ident(), "-1").unwrap_err();
         parse(ident(), "-1test").unwrap_err();
@@ -927,10 +989,8 @@ mod test {
 
     #[test]
     fn parse_type() {
-        assert_eq!(parse(type_name(), "(abcdef)").unwrap(),
-                   "abcdef".into());
-        assert_eq!(parse(type_name(), "(xx_cd$yy)").unwrap(),
-                   "xx_cd$yy".into());
+        assert_eq!(parse(type_name(), "(abcdef)").unwrap(), "abcdef".into());
+        assert_eq!(parse(type_name(), "(xx_cd$yy)").unwrap(), "xx_cd$yy".into());
         parse(type_name(), "(1abc)").unwrap_err();
         parse(type_name(), "( abc)").unwrap_err();
         parse(type_name(), "(abc )").unwrap_err();
@@ -973,8 +1033,13 @@ mod test {
 
     #[test]
     fn parse_type_name_value() {
-        assert_eq!(parse(type_name_value(), "(abcdef)\"hello\"").unwrap(),
-                   Scalar { type_name: Some("abcdef".into()), literal: "hello".into() });
+        assert_eq!(
+            parse(type_name_value(), "(abcdef)\"hello\"").unwrap(),
+            Scalar {
+                type_name: Some("abcdef".into()),
+                literal: "hello".into()
+            }
+        );
         // assert_eq!(parse(type_name_value(), "(xx_cd$yy)\"hello\"").unwrap(),
         //            "xx_cd$yy".into());
         parse(type_name_value(), "(1abc)\"hello\"").unwrap_err();
@@ -1011,118 +1076,132 @@ mod test {
 
         let nval = single(parse(nodes(), "(\"std::duration\")\"timeout\""));
         assert_eq!(nval.node_name.as_ref(), "timeout");
-        assert_eq!(nval.type_name.as_ref().map(|x| x.as_ref()),
-                   Some("std::duration"));
+        assert_eq!(
+            nval.type_name.as_ref().map(|x| x.as_ref()),
+            Some("std::duration")
+        );
 
         let nval = single(parse(nodes(), "hello \"arg1\""));
         assert_eq!(nval.node_name.as_ref(), "hello");
         assert_eq!(nval.type_name.as_ref(), None);
         assert_eq!(nval.arguments.len(), 1);
         assert_eq!(nval.properties.len(), 0);
-        assert_eq!(&nval.arguments[0].literal,
-                   &"arg1".into());
+        assert_eq!(&nval.arguments[0].literal, &"arg1".into());
 
         let nval = single(parse(nodes(), "node \"true\""));
         assert_eq!(nval.node_name.as_ref(), "node");
         assert_eq!(nval.type_name.as_ref(), None);
         assert_eq!(nval.arguments.len(), 1);
         assert_eq!(nval.properties.len(), 0);
-        assert_eq!(&nval.arguments[0].literal,
-                   &"true".into());
+        assert_eq!(&nval.arguments[0].literal, &"true".into());
 
         let nval = single(parse(nodes(), "hello (string)\"arg1\""));
         assert_eq!(nval.node_name.as_ref(), "hello");
         assert_eq!(nval.type_name.as_ref(), None);
         assert_eq!(nval.arguments.len(), 1);
         assert_eq!(nval.properties.len(), 0);
-        assert_eq!(&**nval.arguments[0].type_name.as_ref().unwrap(),
-                   "string");
-        assert_eq!(&nval.arguments[0].literal,
-                   &"arg1".into());
+        assert_eq!(&**nval.arguments[0].type_name.as_ref().unwrap(), "string");
+        assert_eq!(&nval.arguments[0].literal, &"arg1".into());
 
         let nval = single(parse(nodes(), "hello key=(string)\"arg1\""));
         assert_eq!(nval.node_name.as_ref(), "hello");
         assert_eq!(nval.type_name.as_ref(), None);
         assert_eq!(nval.arguments.len(), 0);
         assert_eq!(nval.properties.len(), 1);
-        assert_eq!(&**nval.properties.get("key").unwrap()
-                   .type_name.as_ref().unwrap(),
-                   "string");
-        assert_eq!(&nval.properties.get("key").unwrap().literal,
-                   &"arg1".into());
+        assert_eq!(
+            &**nval
+                .properties
+                .get("key")
+                .unwrap()
+                .type_name
+                .as_ref()
+                .unwrap(),
+            "string"
+        );
+        assert_eq!(&nval.properties.get("key").unwrap().literal, &"arg1".into());
 
         let nval = single(parse(nodes(), "hello key=\"arg1\""));
         assert_eq!(nval.node_name.as_ref(), "hello");
         assert_eq!(nval.type_name.as_ref(), None);
         assert_eq!(nval.arguments.len(), 0);
         assert_eq!(nval.properties.len(), 1);
-        assert_eq!(&nval.properties.get("key").unwrap().literal,
-                   &"arg1".into());
+        assert_eq!(&nval.properties.get("key").unwrap().literal, &"arg1".into());
 
         let nval = single(parse(nodes(), "parent {\nchild\n}"));
         assert_eq!(nval.node_name.as_ref(), "parent");
         assert_eq!(nval.children().len(), 1);
-        assert_eq!(nval.children.as_ref().unwrap()[0].node_name.as_ref(),
-                   "child");
+        assert_eq!(
+            nval.children.as_ref().unwrap()[0].node_name.as_ref(),
+            "child"
+        );
 
         let nval = single(parse(nodes(), "parent {\nchild1\nchild2\n}"));
         assert_eq!(nval.node_name.as_ref(), "parent");
         assert_eq!(nval.children().len(), 2);
-        assert_eq!(nval.children.as_ref().unwrap()[0].node_name.as_ref(),
-                   "child1");
-        assert_eq!(nval.children.as_ref().unwrap()[1].node_name.as_ref(),
-                   "child2");
+        assert_eq!(
+            nval.children.as_ref().unwrap()[0].node_name.as_ref(),
+            "child1"
+        );
+        assert_eq!(
+            nval.children.as_ref().unwrap()[1].node_name.as_ref(),
+            "child2"
+        );
 
         let nval = single(parse(nodes(), "parent{\nchild3\n}"));
         assert_eq!(nval.node_name.as_ref(), "parent");
         assert_eq!(nval.children().len(), 1);
-        assert_eq!(nval.children.as_ref().unwrap()[0].node_name.as_ref(),
-                   "child3");
+        assert_eq!(
+            nval.children.as_ref().unwrap()[0].node_name.as_ref(),
+            "child3"
+        );
 
         let nval = single(parse(nodes(), "parent \"x\"=1 {\nchild4\n}"));
         assert_eq!(nval.node_name.as_ref(), "parent");
         assert_eq!(nval.properties.len(), 1);
         assert_eq!(nval.children().len(), 1);
-        assert_eq!(nval.children.as_ref().unwrap()[0].node_name.as_ref(),
-                   "child4");
+        assert_eq!(
+            nval.children.as_ref().unwrap()[0].node_name.as_ref(),
+            "child4"
+        );
 
         let nval = single(parse(nodes(), "parent \"x\" {\nchild4\n}"));
         assert_eq!(nval.node_name.as_ref(), "parent");
         assert_eq!(nval.arguments.len(), 1);
         assert_eq!(nval.children().len(), 1);
-        assert_eq!(nval.children.as_ref().unwrap()[0].node_name.as_ref(),
-                   "child4");
+        assert_eq!(
+            nval.children.as_ref().unwrap()[0].node_name.as_ref(),
+            "child4"
+        );
 
         let nval = single(parse(nodes(), "parent \"x\"{\nchild5\n}"));
         assert_eq!(nval.node_name.as_ref(), "parent");
         assert_eq!(nval.arguments.len(), 1);
         assert_eq!(nval.children().len(), 1);
-        assert_eq!(nval.children.as_ref().unwrap()[0].node_name.as_ref(),
-                   "child5");
+        assert_eq!(
+            nval.children.as_ref().unwrap()[0].node_name.as_ref(),
+            "child5"
+        );
 
         let nval = single(parse(nodes(), "hello /-\"skip_arg\" \"arg2\""));
         assert_eq!(nval.node_name.as_ref(), "hello");
         assert_eq!(nval.type_name.as_ref(), None);
         assert_eq!(nval.arguments.len(), 1);
         assert_eq!(nval.properties.len(), 0);
-        assert_eq!(&nval.arguments[0].literal,
-                   &"arg2".into());
+        assert_eq!(&nval.arguments[0].literal, &"arg2".into());
 
         let nval = single(parse(nodes(), "hello /- \"skip_arg\" \"arg2\""));
         assert_eq!(nval.node_name.as_ref(), "hello");
         assert_eq!(nval.type_name.as_ref(), None);
         assert_eq!(nval.arguments.len(), 1);
         assert_eq!(nval.properties.len(), 0);
-        assert_eq!(&nval.arguments[0].literal,
-                   &"arg2".into());
+        assert_eq!(&nval.arguments[0].literal, &"arg2".into());
 
         let nval = single(parse(nodes(), "hello prop1=\"1\" /-prop1=\"2\""));
         assert_eq!(nval.node_name.as_ref(), "hello");
         assert_eq!(nval.type_name.as_ref(), None);
         assert_eq!(nval.arguments.len(), 0);
         assert_eq!(nval.properties.len(), 1);
-        assert_eq!(&nval.properties.get("prop1").unwrap().literal,
-                   &"1".into());
+        assert_eq!(&nval.properties.get("prop1").unwrap().literal, &"1".into());
 
         let nval = single(parse(nodes(), "parent /-{\nchild\n}"));
         assert_eq!(nval.node_name.as_ref(), "parent");
@@ -1256,7 +1335,6 @@ mod test {
         assert_eq!(nval.len(), 1);
         assert_eq!(nval[0].node_name.as_ref(), "second");
         assert_eq!(nval[0].children().len(), 0);
-
     }
 
     #[test]
@@ -1287,9 +1365,9 @@ mod test {
         assert_eq!(nval.len(), 1);
         assert_eq!(nval[0].arguments.len(), 1);
         assert_eq!(nval[0].properties.len(), 1);
-    //     assert_eq!(&nval[0].arguments[0].literal,
-    //                &Integer(10, "-1".into()));
-    //     assert_eq!(&nval[0].properties.get("--x").unwrap().literal,
-    //                &Integer(10, "2".into()));
+        //     assert_eq!(&nval[0].arguments[0].literal,
+        //                &Integer(10, "-1".into()));
+        //     assert_eq!(&nval[0].properties.get("--x").unwrap().literal,
+        //                &Integer(10, "2".into()));
     }
 }

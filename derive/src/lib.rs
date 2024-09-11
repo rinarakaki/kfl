@@ -8,10 +8,10 @@ mod node;
 mod scalar;
 mod variants;
 
-use proc_macro::TokenStream;
 use alloc::{format, string::String};
 use definition::Definition;
-use scalar::{Scalar, emit_decode_scalar, emit_encode_scalar};
+use proc_macro::TokenStream;
+use scalar::{emit_decode_scalar, emit_encode_scalar, Scalar};
 
 type EmitResult = syn::Result<proc_macro2::TokenStream>;
 

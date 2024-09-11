@@ -1,11 +1,6 @@
 //! Structures that represent abstract syntax tree (AST) of the KDL document
 
-use alloc::{
-    borrow::ToOwned,
-    boxed::Box,
-    collections::BTreeMap,
-    vec::Vec
-};
+use alloc::{borrow::ToOwned, boxed::Box, collections::BTreeMap, vec::Vec};
 use core::fmt::{self, Debug, Pointer};
 
 use crate::own;
@@ -55,22 +50,30 @@ impl Node {
         }
     }
     /// Returns node children
-    pub fn children(&self) -> impl ExactSizeIterator<Item = &Node>
-    {
-        self.children.as_ref().map(|c| c.iter()).unwrap_or_else(|| [].iter())
+    pub fn children(&self) -> impl ExactSizeIterator<Item = &Node> {
+        self.children
+            .as_ref()
+            .map(|c| c.iter())
+            .unwrap_or_else(|| [].iter())
     }
 }
 
 impl Scalar {
     /// TODO
     pub fn new(type_name: Box<str>, literal: Box<str>) -> Self {
-        Self { type_name: Some(type_name), literal }
+        Self {
+            type_name: Some(type_name),
+            literal,
+        }
     }
 }
 
 impl From<Box<str>> for Scalar {
     fn from(value: Box<str>) -> Self {
-        Scalar { type_name: None, literal: value }
+        Scalar {
+            type_name: None,
+            literal: value,
+        }
     }
 }
 

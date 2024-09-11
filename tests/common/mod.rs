@@ -8,18 +8,20 @@ macro_rules! assert_decode {
         let output = $output;
         common::hint_same_type(&node, &output);
         assert_eq!(node, output);
-    }
+    };
 }
 
 #[macro_export]
 macro_rules! assert_decode_error {
     ($ty:ty, $input:literal, $output:literal) => {
         let err = kfl::decode::<$ty>("<test>", $input).unwrap_err();
-        let err = <kfl::Error as miette::Diagnostic>::related(&err).unwrap()
-            .map(|e| e.to_string()).collect::<Vec<_>>()
+        let err = <kfl::Error as miette::Diagnostic>::related(&err)
+            .unwrap()
+            .map(|e| e.to_string())
+            .collect::<Vec<_>>()
             .join("\n");
         assert_eq!(err, $output);
-    }
+    };
 }
 
 #[macro_export]
@@ -29,19 +31,20 @@ macro_rules! assert_decode_children {
         let output = $output;
         common::hint_same_type(&node, &output);
         assert_eq!(node, output);
-    }
+    };
 }
 
 #[macro_export]
 macro_rules! assert_decode_children_error {
     ($ty:ty, $input:literal, $output:literal) => {
-        let err = kfl::decode_children::<$ty>("<test>", $input)
-            .unwrap_err();
-        let err = <kfl::Error as miette::Diagnostic>::related(&err).unwrap()
-            .map(|e| e.to_string()).collect::<Vec<_>>()
+        let err = kfl::decode_children::<$ty>("<test>", $input).unwrap_err();
+        let err = <kfl::Error as miette::Diagnostic>::related(&err)
+            .unwrap()
+            .map(|e| e.to_string())
+            .collect::<Vec<_>>()
             .join("\n");
         assert_eq!(err, $output);
-    }
+    };
 }
 
 #[macro_export]
@@ -51,7 +54,7 @@ macro_rules! assert_encode {
         let output = $output.to_owned();
         // common::hint_same_type(&input, &output);
         assert_eq!(input, output);
-    }
+    };
 }
 
 // #[macro_export]
@@ -72,5 +75,5 @@ macro_rules! assert_encode_children {
         let output = $output.to_owned();
         // common::hint_same_type(&input, &output);
         assert_eq!(input, output);
-    }
+    };
 }

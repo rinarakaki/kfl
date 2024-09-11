@@ -5,18 +5,12 @@
 extern crate std;
 
 use alloc::{
-    borrow::Cow,
-    boxed::Box,
-    collections::BTreeSet,
-    format,
-    string::String,
-    vec,
-    vec::Vec
+    borrow::Cow, boxed::Box, collections::BTreeSet, format, string::String, vec, vec::Vec,
 };
 use core::fmt::{self, Display, Write};
 
-use thiserror::Error;
 use miette::{Diagnostic, NamedSource, Report};
+use thiserror::Error;
 
 use crate::span::Span;
 
@@ -274,9 +268,7 @@ impl Display for TokenFormat {
             Token(s) => write!(f, "`{}`", s.escape_default()),
             Kind(s) => write!(f, "{}", s),
             Eoi => write!(f, "end of input"),
-            OpenRaw(0) => {
-                f.write_str("`r\"`")
-            }
+            OpenRaw(0) => f.write_str("`r\"`"),
             OpenRaw(n) => {
                 f.write_str("`r")?;
                 for _ in 0..*n {
@@ -284,9 +276,7 @@ impl Display for TokenFormat {
                 }
                 f.write_str("\"`")
             }
-            CloseRaw(0) => {
-                f.write_str("`\"`")
-            }
+            CloseRaw(0) => f.write_str("`\"`"),
             CloseRaw(n) => {
                 f.write_str("`\"")?;
                 for _ in 0..*n {
@@ -301,7 +291,7 @@ impl Display for TokenFormat {
 impl Display for FormatUnexpected<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "found {}", self.0)?;
-            let mut iter = self.1.iter();
+        let mut iter = self.1.iter();
         if let Some(item) = iter.next() {
             write!(f, ", expected {}", item)?;
             let back = iter.next_back();
@@ -318,7 +308,10 @@ impl Display for FormatUnexpected<'_> {
 
 impl ParseError {
     pub(crate) fn with_expected_kind(mut self, token: &'static str) -> Self {
-        if let ParseError::Unexpected { ref mut expected, .. } = &mut self {
+        if let ParseError::Unexpected {
+            ref mut expected, ..
+        } = &mut self
+        {
             *expected = [TokenFormat::Kind(token)].into_iter().collect();
         }
         self
@@ -326,7 +319,10 @@ impl ParseError {
 
     #[allow(dead_code)]
     pub(crate) fn with_no_expected(mut self) -> Self {
-        if let ParseError::Unexpected { ref mut expected, .. } = &mut self {
+        if let ParseError::Unexpected {
+            ref mut expected, ..
+        } = &mut self
+        {
             *expected = BTreeSet::new();
         }
         self
@@ -339,12 +335,15 @@ impl<'a> chumsky::error::Error<'a, &'a str> for ParseError {
     fn expected_found<E: IntoIterator<Item = Option<MaybeRef<'a, char>>>>(
         expected: E,
         found: Option<MaybeRef<'a, char>>,
-        span: <&'a str as Input<'a>>::Span
+        span: <&'a str as Input<'a>>::Span,
     ) -> Self {
         ParseError::Unexpected {
             label: None,
             span: span.into(),
-            expected: expected.into_iter().map(|e| e.as_deref().copied().into()).collect(),
+            expected: expected
+                .into_iter()
+                .map(|e| e.as_deref().copied().into())
+                .collect(),
             found: found.as_deref().copied().into(),
         }
     }
@@ -353,9 +352,14 @@ impl<'a> chumsky::error::Error<'a, &'a str> for ParseError {
         use ParseError::*;
         match (&mut self, other) {
             (Unclosed { .. }, _) => self,
-            (_, other@Unclosed { .. }) => other,
-            (Unexpected { expected: ref mut dest, .. },
-             Unexpected { expected, .. }) => {
+            (_, other @ Unclosed { .. }) => other,
+            (
+                Unexpected {
+                    expected: ref mut dest,
+                    ..
+                },
+                Unexpected { expected, .. },
+            ) => {
                 dest.extend(expected);
                 self
             }
@@ -384,7 +388,8 @@ impl<'a> chumsky::error::Error<'a, &'a str> for ParseError {
 impl DecodeError {
     /// Construct [`DecodeError::Conversion`] error
     pub fn conversion<E>(span: Span, err: E) -> Self
-        where E: Into<Box<dyn std::error::Error + Send + Sync + 'static>>,
+    where
+        E: Into<Box<dyn std::error::Error + Send + Sync + 'static>>,
     {
         DecodeError::Conversion {
             span,
@@ -410,10 +415,7 @@ impl DecodeError {
     }
 
     /// Construct [`DecodeError::Unexpected`] error
-    pub fn unexpected(span: Span, kind: &'static str,
-                      message: impl Into<String>)
-        -> Self
-    {
+    pub fn unexpected(span: Span, kind: &'static str, message: impl Into<String>) -> Self {
         DecodeError::Unexpected {
             span,
             kind,
@@ -422,8 +424,9 @@ impl DecodeError {
     }
 
     /// Construct [`DecodeError::Unsupported`] error
-    pub fn unsupported<T, M>(span: Span, message: M)-> Self
-        where M: Into<Cow<'static, str>>,
+    pub fn unsupported<T, M>(span: Span, message: M) -> Self
+    where
+        M: Into<Cow<'static, str>>,
     {
         DecodeError::Unsupported {
             span,
@@ -475,11 +478,7 @@ impl Display for ExpectedType {
             if let Some(first) = iter.next() {
                 write!(f, "{}", first)?;
             }
-            let last = if self.no_type {
-                None
-            } else {
-                iter.next_back()
-            };
+            let last = if self.no_type { None } else { iter.next_back() };
             for item in iter {
                 write!(f, ", {}", item)?;
             }

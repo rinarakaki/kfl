@@ -13,7 +13,7 @@ fn decode_flatten() {
         #[kfl(child, default)]
         child1: Option<Child1>,
         #[kfl(children, default)]
-        children2: Vec<Child2>
+        children2: Vec<Child2>,
     }
     #[derive(Decode, Debug, PartialEq)]
     struct Parent {
@@ -31,10 +31,13 @@ fn decode_flatten() {
                 child1: Some(Child1("v1".into())),
                 children2: vec![Child2("v2".into()), Child2("v3".into())]
             }
-        });
-    assert_decode_error!(Parent,
+        }
+    );
+    assert_decode_error!(
+        Parent,
         r#"something "world""#,
-        "unexpected node `something`");
+        "unexpected node `something`"
+    );
 }
 
 #[test]
@@ -61,7 +64,7 @@ fn decode_flatten_flatten() {
         #[kfl(children, default)]
         children2: Vec<Child2>,
         #[kfl(flatten)]
-        intermediate: Intermediate2
+        intermediate: Intermediate2,
     }
     #[derive(Decode, Debug, PartialEq)]
     struct Parent {
@@ -90,8 +93,11 @@ fn decode_flatten_flatten() {
                     children4: vec![Child4("v5".into())]
                 }
             }
-        });
-    assert_decode_error!(Parent,
+        }
+    );
+    assert_decode_error!(
+        Parent,
         r#"something "world""#,
-        "unexpected node `something`");
+        "unexpected node `something`"
+    );
 }
