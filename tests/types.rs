@@ -1,7 +1,7 @@
 mod common;
 
-use std::path::PathBuf;
 use kfl::Decode;
+use std::path::PathBuf;
 
 #[derive(Decode, Debug, PartialEq)]
 struct Scalars {
@@ -19,7 +19,8 @@ struct Scalars {
 
 #[test]
 fn decode_types() {
-    assert_decode!(r#"
+    assert_decode!(
+        r#"
         scalars \
             "hello" \
             1234 \

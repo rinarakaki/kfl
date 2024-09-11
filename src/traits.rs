@@ -7,8 +7,8 @@
 
 use crate::{
     ast::{Node, Scalar},
+    context::Context,
     errors::{DecodeError, EncodeError},
-    context::Context
 };
 
 /// Trait to decode KDL node from the AST
@@ -30,8 +30,7 @@ pub trait DecodePartial: Sized + Default {
     ///
     /// Returns `Ok(true)` if the child is "consumed" (i.e. stored in this
     /// structure).
-    fn decode_partial(&mut self, node: &Node, ctx: &mut Context)
-        -> Result<bool, DecodeError>;
+    fn decode_partial(&mut self, node: &Node, ctx: &mut Context) -> Result<bool, DecodeError>;
     // /// The method is called when unknown property is encountered by parent
     // /// structure
     // ///
@@ -58,8 +57,7 @@ pub trait Encode: Decode {
 /// TODO(rnarkk)
 pub trait EncodePartial: DecodePartial {
     /// TODO(rnarkk)
-    fn encode_partial(&self, node: &mut Node, ctx: &mut Context)
-        -> Result<(), EncodeError>;
+    fn encode_partial(&self, node: &mut Node, ctx: &mut Context) -> Result<(), EncodeError>;
 }
 
 /// The trait that encodes scalar value and checks its type

@@ -1,8 +1,16 @@
 stages:
+  - format
   - lint
   - build
 
-clippy_check:
+rustfmt:
+  stage: format
+  image: rust:latest
+  script:
+    - rustup component add rustfmt
+    - cargo fmt --check
+
+clippy:
   stage: lint
   image: rust:latest
   script:

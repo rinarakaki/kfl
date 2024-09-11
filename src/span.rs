@@ -14,7 +14,7 @@
 
 use core::{
     fmt::{self, Display},
-    ops::Range
+    ops::Range,
 };
 
 // use crate::traits;
@@ -26,10 +26,8 @@ pub use miette::SourceSpan;
 #[derive(Clone, Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "minicbor", derive(minicbor::Encode, minicbor::Decode))]
 pub struct Span(
-    #[cfg_attr(feature = "minicbor", n(0))]
-    pub usize,
-    #[cfg_attr(feature = "minicbor", n(1))]
-    pub usize,
+    #[cfg_attr(feature = "minicbor", n(0))] pub usize,
+    #[cfg_attr(feature = "minicbor", n(1))] pub usize,
 );
 
 /// Line and column position of the datum in the source code
@@ -52,10 +50,8 @@ pub struct LinePos {
 #[derive(Clone, Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "minicbor", derive(minicbor::Encode, minicbor::Decode))]
 pub struct LineSpan(
-    #[cfg_attr(feature = "minicbor", n(0))]
-    pub LinePos,
-    #[cfg_attr(feature = "minicbor", n(1))]
-    pub LinePos,
+    #[cfg_attr(feature = "minicbor", n(0))] pub LinePos,
+    #[cfg_attr(feature = "minicbor", n(1))] pub LinePos,
 );
 
 impl Span {

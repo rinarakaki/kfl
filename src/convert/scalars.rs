@@ -1,22 +1,15 @@
 //! Convert built-in scalar types.
 
-use alloc::{
-    boxed::Box,
-    format,
-    string::String
-};
+use alloc::{boxed::Box, format, string::String};
 use core::str::FromStr;
 
-use chumsky::{
-    extra::Full,
-    prelude::*,
-};
+use chumsky::{extra::Full, prelude::*};
 
 use crate::{
     ast::Scalar,
     context::Context,
-    errors::{DecodeError, ExpectedType, EncodeError, ParseError},
-    traits::{DecodeScalar, EncodeScalar}
+    errors::{DecodeError, EncodeError, ExpectedType, ParseError},
+    traits::{DecodeScalar, EncodeScalar},
 };
 
 type I<'a> = &'a str;
@@ -27,36 +20,54 @@ fn digit<'a>(radix: u32) -> impl Parser<'a, I<'a>, char, Extra> {
 }
 
 fn digits<'a>(radix: u32) -> impl Parser<'a, I<'a>, &'a str, Extra> {
-    any().filter(move |c: &char| c == &'_' || c.is_digit(radix)).repeated().to_slice()
+    any()
+        .filter(move |c: &char| c == &'_' || c.is_digit(radix))
+        .repeated()
+        .to_slice()
 }
 
 fn decimal_number<'a>() -> impl Parser<'a, I<'a>, (u32, Box<str>), Extra> {
-    just('-').or(just('+')).or_not()
-    .then(digit(10))
-    .then(digits(10))
-    .then(just('.').then(digit(10)).then(digits(10)).or_not())
-    .then(just('e').or(just('E'))
-          .then(just('-').or(just('+')).or_not())
-          .then(digits(10)).or_not())
-    .to_slice()
-    .map(|v| (10, v.chars().filter(|c| c != &'_').collect::<String>().into()))
+    just('-')
+        .or(just('+'))
+        .or_not()
+        .then(digit(10))
+        .then(digits(10))
+        .then(just('.').then(digit(10)).then(digits(10)).or_not())
+        .then(
+            just('e')
+                .or(just('E'))
+                .then(just('-').or(just('+')).or_not())
+                .then(digits(10))
+                .or_not(),
+        )
+        .to_slice()
+        .map(|v| {
+            (
+                10,
+                v.chars().filter(|c| c != &'_').collect::<String>().into(),
+            )
+        })
 }
 
 fn radix_number<'a>() -> impl Parser<'a, I<'a>, (u32, Box<str>), Extra> {
     // sign
-    just('-').or(just('+')).or_not()
-    .then_ignore(just('0'))
-    .then(choice((
-        just('b').ignore_then(digit(2).then(digits(2)).to_slice().map(|s| (2, s))),
-        just('o').ignore_then(digit(8).then(digits(8)).to_slice().map(|s| (10, s))),
-        just('x').ignore_then(digit(16).then(digits(16)).to_slice().map(|s| (16, s))),
-    )))
-    .map(|(sign, (radix, value))| {
-        let mut s = String::with_capacity(value.len() + sign.map_or(0, |_| 1));
-        if let Some(c) = sign { s.push(c) }
-        s.extend(value.chars().filter(|&c| c != '_'));
-        (radix, s.into())
-    })
+    just('-')
+        .or(just('+'))
+        .or_not()
+        .then_ignore(just('0'))
+        .then(choice((
+            just('b').ignore_then(digit(2).then(digits(2)).to_slice().map(|s| (2, s))),
+            just('o').ignore_then(digit(8).then(digits(8)).to_slice().map(|s| (10, s))),
+            just('x').ignore_then(digit(16).then(digits(16)).to_slice().map(|s| (16, s))),
+        )))
+        .map(|(sign, (radix, value))| {
+            let mut s = String::with_capacity(value.len() + sign.map_or(0, |_| 1));
+            if let Some(c) = sign {
+                s.push(c)
+            }
+            s.extend(value.chars().filter(|&c| c != '_'));
+            (radix, s.into())
+        })
 }
 
 fn number<'a>() -> impl Parser<'a, I<'a>, (u32, Box<str>), Extra> {
@@ -66,9 +77,7 @@ fn number<'a>() -> impl Parser<'a, I<'a>, (u32, Box<str>), Extra> {
 macro_rules! impl_integer {
     ($ty:ident) => {
         impl DecodeScalar for $ty {
-            fn decode(scalar: &Scalar, ctx: &mut Context)
-                -> Result<Self, DecodeError>
-            {
+            fn decode(scalar: &Scalar, ctx: &mut Context) -> Result<Self, DecodeError> {
                 if let Some(typ) = scalar.type_name.as_ref() {
                     if typ.as_ref() != stringify!($ty) {
                         return Err(DecodeError::TypeName {
@@ -79,11 +88,17 @@ macro_rules! impl_integer {
                         });
                     }
                 }
-                match number().parse_with_state(scalar.literal.as_ref(), ctx)
+                match number()
+                    .parse_with_state(scalar.literal.as_ref(), ctx)
                     .into_result()
                 {
-                    Ok((radix, value)) => <$ty>::from_str_radix(&value, radix).map_err(|err| DecodeError::conversion(ctx.span(&scalar), err)),
-                    Err(_) => Err(DecodeError::scalar_kind(ctx.span(&scalar), "integer", scalar.literal.clone()))  // TODO(rnarkk)
+                    Ok((radix, value)) => <$ty>::from_str_radix(&value, radix)
+                        .map_err(|err| DecodeError::conversion(ctx.span(&scalar), err)),
+                    Err(_) => Err(DecodeError::scalar_kind(
+                        ctx.span(&scalar),
+                        "integer",
+                        scalar.literal.clone(),
+                    )), // TODO(rnarkk)
                 }
             }
         }
@@ -91,10 +106,13 @@ macro_rules! impl_integer {
         impl EncodeScalar for $ty {
             fn encode(&self, _: &mut Context) -> Result<Scalar, EncodeError> {
                 let literal = format!("{}", self);
-                Ok(Scalar { type_name: None, literal: literal.into() })
+                Ok(Scalar {
+                    type_name: None,
+                    literal: literal.into(),
+                })
             }
         }
-    }
+    };
 }
 
 impl_integer!(i8);
@@ -111,9 +129,7 @@ impl_integer!(usize);
 macro_rules! impl_decimal {
     ($ty:ident) => {
         impl DecodeScalar for $ty {
-            fn decode(scalar: &Scalar, ctx: &mut Context)
-                -> Result<Self, DecodeError>
-            {
+            fn decode(scalar: &Scalar, ctx: &mut Context) -> Result<Self, DecodeError> {
                 if let Some(typ) = scalar.type_name.as_ref() {
                     if typ.as_ref() != stringify!($ty) {
                         return Err(DecodeError::TypeName {
@@ -124,10 +140,22 @@ macro_rules! impl_decimal {
                         });
                     }
                 }
-                match number().parse_with_state(scalar.literal.as_ref(), ctx).into_result() {
-                    Ok((10, value)) => <$ty>::from_str(value.as_ref()).map_err(|err| DecodeError::conversion(ctx.span(&scalar), err)),
-                    Ok(_) => Err(DecodeError::unexpected(ctx.span(&scalar), "radix", "radix other than 10 (decimal) is not implemented")),
-                    Err(_) => Err(DecodeError::scalar_kind(ctx.span(&scalar), "decimal", scalar.literal.clone()))
+                match number()
+                    .parse_with_state(scalar.literal.as_ref(), ctx)
+                    .into_result()
+                {
+                    Ok((10, value)) => <$ty>::from_str(value.as_ref())
+                        .map_err(|err| DecodeError::conversion(ctx.span(&scalar), err)),
+                    Ok(_) => Err(DecodeError::unexpected(
+                        ctx.span(&scalar),
+                        "radix",
+                        "radix other than 10 (decimal) is not implemented",
+                    )),
+                    Err(_) => Err(DecodeError::scalar_kind(
+                        ctx.span(&scalar),
+                        "decimal",
+                        scalar.literal.clone(),
+                    )),
                 }
                 // <$ty>::from_str(scalar.literal.as_ref())
             }
@@ -136,10 +164,13 @@ macro_rules! impl_decimal {
         impl EncodeScalar for $ty {
             fn encode(&self, _: &mut Context) -> Result<Scalar, EncodeError> {
                 let literal = format!("{}", self);
-                Ok(Scalar { type_name: None, literal: literal.into() })
+                Ok(Scalar {
+                    type_name: None,
+                    literal: literal.into(),
+                })
             }
         }
-    }
+    };
 }
 
 impl_decimal!(f32);
@@ -161,16 +192,17 @@ impl DecodeScalar for String {
 impl EncodeScalar for String {
     fn encode(&self, _: &mut Context) -> Result<Scalar, EncodeError> {
         let literal = format!("{:?}", self);
-        Ok(Scalar { type_name: None, literal: literal.into() })
+        Ok(Scalar {
+            type_name: None,
+            literal: literal.into(),
+        })
     }
 }
 
 macro_rules! impl_from_str {
     ($ty:ty) => {
         impl DecodeScalar for $ty {
-            fn decode(scalar: &crate::ast::Scalar, ctx: &mut Context)
-                -> Result<Self, DecodeError>
-            {
+            fn decode(scalar: &crate::ast::Scalar, ctx: &mut Context) -> Result<Self, DecodeError> {
                 if let Some(typ) = scalar.type_name.as_ref() {
                     return Err(DecodeError::TypeName {
                         span: ctx.span(&typ),
@@ -180,19 +212,18 @@ macro_rules! impl_from_str {
                     });
                 }
                 <$ty>::from_str(scalar.literal.as_ref())
-                        .map_err(|err| DecodeError::conversion(
-                                 ctx.span(&scalar), err))
+                    .map_err(|err| DecodeError::conversion(ctx.span(&scalar), err))
             }
         }
-    }
+    };
 }
 
 #[cfg(feature = "std")]
 mod _std {
     extern crate std;
-    use std::path::PathBuf;
-    use std::net::SocketAddr;
     use super::*;
+    use std::net::SocketAddr;
+    use std::path::PathBuf;
 
     impl_from_str!(PathBuf);
     impl EncodeScalar for PathBuf {
@@ -200,7 +231,7 @@ mod _std {
             let string = format!("{}", self.display());
             Ok(Scalar {
                 type_name: None,
-                literal: string.into_boxed_str()
+                literal: string.into_boxed_str(),
             })
         }
     }
@@ -211,7 +242,7 @@ mod _std {
             let string = format!("{}", self);
             Ok(Scalar {
                 type_name: None,
-                literal: string.into_boxed_str()
+                literal: string.into_boxed_str(),
             })
         }
     }
@@ -219,15 +250,15 @@ mod _std {
 
 #[cfg(feature = "chrono")]
 mod _chrono {
-    use chrono::NaiveDateTime;
     use super::*;
+    use chrono::NaiveDateTime;
     impl_from_str!(NaiveDateTime);
     impl EncodeScalar for NaiveDateTime {
         fn encode(&self, _: &mut Context) -> Result<Scalar, EncodeError> {
             let string = format!("{}", self);
             Ok(Scalar {
                 type_name: None,
-                literal: string.into_boxed_str()
+                literal: string.into_boxed_str(),
             })
         }
     }
@@ -235,15 +266,15 @@ mod _chrono {
 
 #[cfg(feature = "http")]
 mod _http {
-    use http::Uri;
     use super::*;
+    use http::Uri;
     impl_from_str!(Uri);
     impl EncodeScalar for Uri {
         fn encode(&self, _: &mut Context) -> Result<Scalar, EncodeError> {
             let string = format!("{}", self);
             Ok(Scalar {
                 type_name: None,
-                literal: string.into_boxed_str()
+                literal: string.into_boxed_str(),
             })
         }
     }
@@ -262,8 +293,11 @@ impl DecodeScalar for bool {
         match scalar.literal.as_ref() {
             "true" => Ok(true),
             "false" => Ok(false),
-            _ => Err(DecodeError::scalar_kind(ctx.span(&scalar), "boolean",
-                     scalar.literal.clone()))
+            _ => Err(DecodeError::scalar_kind(
+                ctx.span(&scalar),
+                "boolean",
+                scalar.literal.clone(),
+            )),
         }
     }
 }
@@ -271,8 +305,11 @@ impl EncodeScalar for bool {
     fn encode(&self, _: &mut Context) -> Result<Scalar, EncodeError> {
         let literal = match self {
             true => "true",
-            false => "false"
+            false => "false",
         };
-        Ok(Scalar { type_name: None, literal: literal.into() })
+        Ok(Scalar {
+            type_name: None,
+            literal: literal.into(),
+        })
     }
 }

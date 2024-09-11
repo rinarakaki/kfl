@@ -2,21 +2,13 @@
 //!
 //! Mostly useful for manual implementation of various `Decode*` traits.
 
-use alloc::{
-    boxed::Box,
-    collections::BTreeMap,
-    format,
-    vec::Vec
-};
+use alloc::{boxed::Box, collections::BTreeMap, format, vec::Vec};
 use core::{
     any::{Any, TypeId},
-    fmt::{Pointer, Debug}
+    fmt::{Debug, Pointer},
 };
 
-use crate::{
-    errors::DecodeError,
-    span::Span,
-};
+use crate::{errors::DecodeError, span::Span};
 
 /// Context is passed through all the decode operations and can be used for:
 ///
@@ -42,7 +34,8 @@ impl Context {
     /// TODO
     pub(crate) fn set_span<P: Pointer + Debug>(&mut self, pointer: &P, span: Span) {
         // println!("SET {0:?} {0:p}", pointer);
-        self.spans.insert(format!("{:p}", pointer).into_boxed_str(), span);
+        self.spans
+            .insert(format!("{:p}", pointer).into_boxed_str(), span);
         // println!("{:#?}", &self.spans);
     }
     /// TODO
@@ -82,7 +75,8 @@ impl Context {
     ///
     /// Returns a value previously set in context
     pub fn get<T: 'static>(&self) -> Option<&T> {
-        self.extensions.get(&TypeId::of::<T>())
+        self.extensions
+            .get(&TypeId::of::<T>())
             .and_then(|b| b.downcast_ref())
     }
 }

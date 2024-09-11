@@ -1,7 +1,7 @@
 mod common;
 
-use std::path::PathBuf;
 use kfl::{Decode, Encode};
+use std::path::PathBuf;
 
 #[derive(Decode, Encode, Debug, PartialEq)]
 struct Scalars {

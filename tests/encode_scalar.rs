@@ -32,10 +32,18 @@ fn encode_enum_scalar() {
         First,
         AnotherOption,
     }
-    assert_encode!(Node { value: SomeScalar::First },
-                   r#"node first"#);
-    assert_encode!(Node { value: SomeScalar::AnotherOption },
-                   r#"node another-option"#);
+    assert_encode!(
+        Node {
+            value: SomeScalar::First
+        },
+        r#"node first"#
+    );
+    assert_encode!(
+        Node {
+            value: SomeScalar::AnotherOption
+        },
+        r#"node another-option"#
+    );
     // assert_encode_error!(Node,
     //     r#"node "test""#,
     //     "expected one of `first`, `another-option`");
@@ -48,12 +56,15 @@ fn encode_option_argument() {
         #[kfl(argument)]
         name: Option<String>,
     }
-    assert_encode!(Node { name: Some("hello".into()) },
-                   r#"node "hello""#);
+    assert_encode!(
+        Node {
+            name: Some("hello".into())
+        },
+        r#"node "hello""#
+    );
     // TODO(rnarkk) should fail since no `default` directive
     // assert_encode!(
     //     r#"node"#,
     //     Node { name: None });
-    assert_encode!(Node { name: None },
-                   r#"node null"#);
+    assert_encode!(Node { name: None }, r#"node null"#);
 }

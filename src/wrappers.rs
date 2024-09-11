@@ -1,12 +1,6 @@
-use alloc::{
-    borrow::ToOwned,
-    format,
-    string::String,
-    vec,
-    vec::Vec
-};
-use core::fmt::{Debug, Write};
+use alloc::{borrow::ToOwned, format, string::String, vec, vec::Vec};
 use chumsky::Parser;
+use core::fmt::{Debug, Write};
 use miette::NamedSource;
 
 use crate::{
@@ -20,27 +14,25 @@ use crate::{
 /// Parse KDL text and return AST
 pub fn parse(ctx: &mut Context, input: &str) -> Result<Vec<Node>, Error> {
     grammar::document()
-    .parse_with_state(input, ctx).into_result()
-    .map_err(|errors| {
-        Error {
+        .parse_with_state(input, ctx)
+        .into_result()
+        .map_err(|errors| Error {
             source_code: NamedSource::new(ctx.get::<&str>().unwrap(), input.to_owned()),
             errors: errors.into_iter().map(Into::into).collect(),
-        }
-    })
+        })
 }
 
 /// Parse KDL text and decode it into Rust object
 pub fn decode<T>(file_name: &str, input: &str) -> Result<T, Error>
-    where T: Decode,
+where
+    T: Decode,
 {
     let mut ctx = Context::new();
     let nodes = parse(&mut ctx, input)?;
     ctx.set::<String>(file_name.to_owned());
-    Decode::decode(&nodes[0], &mut ctx).map_err(|error| {
-        Error {
-            source_code: NamedSource::new(file_name, input.to_owned()),
-            errors: vec![error.into()],
-        }
+    Decode::decode(&nodes[0], &mut ctx).map_err(|error| Error {
+        source_code: NamedSource::new(file_name, input.to_owned()),
+        errors: vec![error.into()],
     })
 }
 
@@ -63,29 +55,30 @@ pub fn decode<T>(file_name: &str, input: &str) -> Result<T, Error>
 
 /// Parse KDL text and decode Rust object
 pub fn decode_children<T>(file_name: &str, input: &str) -> Result<T, Error>
-    where T: DecodePartial,
+where
+    T: DecodePartial,
 {
     decode_with_context(file_name, input, |_| {})
 }
 
 /// Parse KDL text and decode Rust object providing extra context for the
 /// decoder
-pub fn decode_with_context<T, F>(file_name: &str, input: &str, set_ctx: F)
-    -> Result<T, Error>
-    where F: FnOnce(&mut Context),
-          T: DecodePartial,
+pub fn decode_with_context<T, F>(file_name: &str, input: &str, set_ctx: F) -> Result<T, Error>
+where
+    F: FnOnce(&mut Context),
+    T: DecodePartial,
 {
     let mut ctx = Context::new();
     let nodes = parse(&mut ctx, input)?;
     set_ctx(&mut ctx);
     let mut output = <T as Default>::default();
     for node in nodes {
-        output.decode_partial(&node, &mut ctx).map_err(|error| {
-            Error {
+        output
+            .decode_partial(&node, &mut ctx)
+            .map_err(|error| Error {
                 source_code: NamedSource::new(file_name, input.to_owned()),
                 errors: vec![error.into()],
-            }
-        })?;
+            })?;
     }
     Ok(output)
 }
@@ -105,43 +98,42 @@ pub fn print(_ctx: &mut Context, node: Node) -> Result<String, Error> {
 
 /// Encode Rust object and print it into KDL text
 pub fn encode<T>(file_name: &str, t: &T) -> Result<String, Error>
-    where T: Encode + Debug,
+where
+    T: Encode + Debug,
 {
     let mut ctx = Context::new();
     ctx.set::<String>(file_name.to_owned());
-    let node = t.encode(&mut ctx).map_err(|error| {
-        Error {
-            source_code: NamedSource::new(file_name, format!("{:?}", &t)),
-            errors: vec![error.into()],
-        }
+    let node = t.encode(&mut ctx).map_err(|error| Error {
+        source_code: NamedSource::new(file_name, format!("{:?}", &t)),
+        errors: vec![error.into()],
     })?;
     print(&mut ctx, node)
 }
 
 /// Parse KDL text and decode Rust object
 pub fn encode_children<T>(file_name: &str, t: &T) -> Result<String, Error>
-    where T: EncodePartial + Debug,
+where
+    T: EncodePartial + Debug,
 {
     encode_with_context(file_name, t, |_| {})
 }
 
 /// Parse KDL text and decode Rust object providing extra context for the
 /// decoder
-pub fn encode_with_context<T, F>(file_name: &str, t: &T, set_ctx: F)
-    -> Result<String, Error>
-    where F: FnOnce(&mut Context),
-          T: EncodePartial + Debug,
+pub fn encode_with_context<T, F>(file_name: &str, t: &T, set_ctx: F) -> Result<String, Error>
+where
+    F: FnOnce(&mut Context),
+    T: EncodePartial + Debug,
 {
     let mut ctx = Context::new();
     // let nodes = print(&mut ctx, &t)?;
     set_ctx(&mut ctx);
     let mut node = Node::new("-");
-    t.encode_partial(&mut node, &mut ctx).map_err(|error| {
-        Error {
+    t.encode_partial(&mut node, &mut ctx)
+        .map_err(|error| Error {
             source_code: NamedSource::new(file_name, format!("{:?}", &t)),
             errors: vec![error.into()],
-        }
-    })?;
+        })?;
     print(&mut ctx, node)
 }
 

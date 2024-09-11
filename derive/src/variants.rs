@@ -1,15 +1,12 @@
-use alloc::{
-    format,
-    vec::Vec
-};
+use alloc::{format, vec::Vec};
 
-use proc_macro2::{TokenStream, Span};
+use proc_macro2::{Span, TokenStream};
 use quote::{quote, ToTokens};
 use syn::ext::IdentExt;
 
 use crate::{
-    definition::{Enum, VariantKind, Struct},
-    node
+    definition::{Enum, Struct, VariantKind},
+    node,
 };
 
 pub(crate) struct Common<'a> {
@@ -103,39 +100,35 @@ fn decode(e: &Common, node: &syn::Ident) -> syn::Result<TokenStream> {
                 });
             }
             VariantKind::Tuple(s) => {
-                let decode_variant = decode_variant(
-                    s,
-                    quote!(#enum_name::#variant_name),
-                    node,
-                    ctx,
-                    false,
-                )?;
+                let decode_variant =
+                    decode_variant(s, quote!(#enum_name::#variant_name), node, ctx, false)?;
                 branches.push(quote!(#name => { #decode_variant }));
             }
             VariantKind::Named(s) => {
-                let decode_variant = decode_variant(
-                    s,
-                    quote!(#enum_name::#variant_name),
-                    node,
-                    ctx,
-                    true,
-                )?;
+                let decode_variant =
+                    decode_variant(s, quote!(#enum_name::#variant_name), node, ctx, true)?;
                 branches.push(quote!(#name => { #decode_variant }));
-            },
+            }
         }
     }
     // TODO(tailhook) use strsim to find similar names
     let err = if e.object.variants.len() <= 3 {
-        format!("expected one of {}",
-                e.object.variants.iter()
+        format!(
+            "expected one of {}",
+            e.object
+                .variants
+                .iter()
                 .map(|v| format!("`{}`", v.name.escape_default()))
                 .collect::<Vec<_>>()
-                .join(", "))
+                .join(", ")
+        )
     } else {
-        format!("expected `{}`, `{}`, or one of {} others",
-                e.object.variants[0].name.escape_default(),
-                e.object.variants[1].name.escape_default(),
-                e.object.variants.len() - 2)
+        format!(
+            "expected `{}`, `{}`, or one of {} others",
+            e.object.variants[0].name.escape_default(),
+            e.object.variants[1].name.escape_default(),
+            e.object.variants.len() - 2
+        )
     };
     Ok(quote! {
         match &*#node.node_name {
@@ -148,23 +141,25 @@ fn decode(e: &Common, node: &syn::Ident) -> syn::Result<TokenStream> {
     })
 }
 
-fn decode_variant(s: &Struct,
-    s_name: impl ToTokens, node: &syn::Ident, ctx: &syn::Ident, named: bool)
-    -> syn::Result<TokenStream>
-{
+fn decode_variant(
+    s: &Struct,
+    s_name: impl ToTokens,
+    node: &syn::Ident,
+    ctx: &syn::Ident,
+    named: bool,
+) -> syn::Result<TokenStream> {
     let children = syn::Ident::new("children", Span::mixed_site());
     let decode_arguments = node::decode_arguments(s, node, ctx)?;
     let decode_properties = node::decode_properties(s, node, ctx)?;
-    let decode_children = node::decode_children(s, &children, ctx,
-                                          Some(quote!(ctx.span(&#node))))?;
+    let decode_children = node::decode_children(s, &children, ctx, Some(quote!(ctx.span(&#node))))?;
     let assign_extra = node::assign_extra(s)?;
     let all_fields = s.all_fields();
     let struct_val = if named {
-        let assignments = all_fields.iter()
-            .map(|f| f.as_assign_pair().unwrap());
+        let assignments = all_fields.iter().map(|f| f.as_assign_pair().unwrap());
         quote!(#s_name { #(#assignments,)* })
     } else {
-        let mut fields = all_fields.iter()
+        let mut fields = all_fields
+            .iter()
             .map(|f| (f.as_index().unwrap(), &f.tmp_name))
             .collect::<Vec<_>>();
         fields.sort_by_key(|(idx, _)| idx.index);
@@ -203,9 +198,7 @@ pub fn emit_encode_enum(e: &Enum) -> syn::Result<TokenStream> {
     })
 }
 
-fn encode(e: &Enum, node: &syn::Ident, ctx: &syn::Ident)
-    -> syn::Result<TokenStream>
-{
+fn encode(e: &Enum, node: &syn::Ident, ctx: &syn::Ident) -> syn::Result<TokenStream> {
     let mut branches = Vec::with_capacity(e.variants.len());
     let enum_name = &e.ident;
     for variant in &e.variants {
@@ -232,7 +225,8 @@ fn encode(e: &Enum, node: &syn::Ident, ctx: &syn::Ident)
                 let variant_pattern = {
                     let name = &s.ident;
                     let all_fields = s.all_fields();
-                    let mut fields = all_fields.iter()
+                    let mut fields = all_fields
+                        .iter()
                         .map(|f| (f.as_index().unwrap(), &f.tmp_name))
                         .collect::<Vec<_>>();
                     fields.sort_by_key(|(idx, _)| idx.index);
@@ -242,11 +236,7 @@ fn encode(e: &Enum, node: &syn::Ident, ctx: &syn::Ident)
                     let assignments = fields.iter().map(|(_, v)| v);
                     quote!(#name(#(#assignments),*))
                 };
-                let encode_variant = encode_variant(
-                    &common,
-                    enum_name,
-                    node,
-                )?;
+                let encode_variant = encode_variant(&common, enum_name, node)?;
                 branches.push(quote! {
                     #enum_name::#variant_pattern => { #encode_variant }
                 });
@@ -256,19 +246,14 @@ fn encode(e: &Enum, node: &syn::Ident, ctx: &syn::Ident)
                 let variant_pattern = {
                     let name = &s.ident;
                     let all_fields = s.all_fields();
-                    let assignments = all_fields.iter()
-                        .map(|f| f.as_assign_pair().unwrap());
+                    let assignments = all_fields.iter().map(|f| f.as_assign_pair().unwrap());
                     quote!(#name { #(#assignments,)* })
                 };
-                let encode_variant = encode_variant(
-                    &common,
-                    enum_name,
-                    node,
-                )?;
+                let encode_variant = encode_variant(&common, enum_name, node)?;
                 branches.push(quote! {
                     #enum_name::#variant_pattern => { #encode_variant }
                 });
-            },
+            }
         }
     }
     // TODO(tailhook) use strsim to find similar names
@@ -299,15 +284,16 @@ fn encode(e: &Enum, node: &syn::Ident, ctx: &syn::Ident)
     })
 }
 
-fn encode_variant(s: &node::Common, enum_name: &syn::Ident, node: &syn::Ident)
-    -> syn::Result<TokenStream>
-{
+fn encode_variant(
+    s: &node::Common,
+    enum_name: &syn::Ident,
+    node: &syn::Ident,
+) -> syn::Result<TokenStream> {
     let name = &s.object.ident;
     let declare_variant = declare_variant(node, enum_name, name);
     let encode_arguments = node::encode_arguments(s, node, true)?;
     let encode_properties = node::encode_properties(s, node, true)?;
-    let encode_children = node::encode_children(s, node,
-                                          Some(quote!(ctx.span(&#node))))?;
+    let encode_children = node::encode_children(s, node, Some(quote!(ctx.span(&#node))))?;
     // let assign_extra = node::assign_extra(s)?;
     Ok(quote! {
         #declare_variant
@@ -319,9 +305,7 @@ fn encode_variant(s: &node::Common, enum_name: &syn::Ident, node: &syn::Ident)
     })
 }
 
-fn declare_variant(node: &syn::Ident, enum_name: &syn::Ident, name: &syn::Ident)
-    -> TokenStream
-{
+fn declare_variant(node: &syn::Ident, enum_name: &syn::Ident, name: &syn::Ident) -> TokenStream {
     let enum_name = crate::to_kebab_case(enum_name);
     let name = crate::to_kebab_case(name);
     quote! {

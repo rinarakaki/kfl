@@ -13,7 +13,7 @@ fn encode_flatten() {
         #[kfl(child, default)]
         child1: Option<Child1>,
         #[kfl(children, default)]
-        children2: Vec<Child2>
+        children2: Vec<Child2>,
     }
     #[derive(Decode, Encode, Debug, PartialEq)]
     struct Parent {
@@ -27,11 +27,12 @@ fn encode_flatten() {
                 children2: vec![Child2("v2".into()), Child2("v3".into())]
             }
         },
-r#"parent {
+        r#"parent {
   child1 "v1"
   child2 "v2"
   child2 "v3"
-}"#);
+}"#
+    );
     // assert_encode_error!(Parent,
     //     r#"something "world""#,
     //     "unexpected node `something`");
@@ -61,7 +62,7 @@ fn encode_flatten_flatten() {
         #[kfl(children, default)]
         children2: Vec<Child2>,
         #[kfl(flatten)]
-        intermediate: Intermediate2
+        intermediate: Intermediate2,
     }
     #[derive(Decode, Encode, Debug, PartialEq)]
     struct Parent {
@@ -83,14 +84,15 @@ fn encode_flatten_flatten() {
                 }
             }
         },
-r#"parent {
+        r#"parent {
   child1 "v1"
   child2 "v2"
   child2 "v3"
   child2 "v6"
   child3 "v4"
   child4 "v5"
-}"#);
+}"#
+    );
     // assert_encode_error!(Parent,
     //     r#"something "world""#,
     //     "unexpected node `something`");

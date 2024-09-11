@@ -7,7 +7,7 @@ use crate::{
     ast::{Node, Scalar},
     context::Context,
     errors::{DecodeError, EncodeError},
-    traits::{Decode, DecodeScalar, Encode, EncodeScalar}
+    traits::{Decode, DecodeScalar, Encode, EncodeScalar},
 };
 
 impl Decode for Node {
@@ -15,19 +15,25 @@ impl Decode for Node {
         Ok(Node {
             type_name: node.type_name.clone(),
             node_name: node.node_name.clone(),
-            arguments: node.arguments.iter()
+            arguments: node
+                .arguments
+                .iter()
                 .map(|v| DecodeScalar::decode(v, ctx))
                 .collect::<Result<_, _>>()?,
-            properties: node.properties.iter()
-                .map(|(k, v)| {
-                    Ok((k.clone(), DecodeScalar::decode(v, ctx)?))
-                })
+            properties: node
+                .properties
+                .iter()
+                .map(|(k, v)| Ok((k.clone(), DecodeScalar::decode(v, ctx)?)))
                 .collect::<Result<_, _>>()?,
-            children: node.children.as_ref().map(|sc| {
-                sc.iter()
-                    .map(|node| Decode::decode(node, ctx))
-                    .collect::<Result<_, _>>()
-            }).transpose()?,
+            children: node
+                .children
+                .as_ref()
+                .map(|sc| {
+                    sc.iter()
+                        .map(|node| Decode::decode(node, ctx))
+                        .collect::<Result<_, _>>()
+                })
+                .transpose()?,
         })
     }
 }

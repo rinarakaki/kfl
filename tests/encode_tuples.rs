@@ -37,10 +37,8 @@ fn print_option_argument() {
 fn print_extra() {
     #[derive(Debug, Decode, Encode, PartialEq)]
     struct Node(#[kfl(argument, default)] Option<String>, u32);
-    assert_encode!(Node(Some("123".into()), 0),
-                   r#"node "123""#);
-    assert_encode!(Node(None, 0),
-                   r#"node"#);
+    assert_encode!(Node(Some("123".into()), 0), r#"node "123""#);
+    assert_encode!(Node(None, 0), r#"node"#);
     // assert_encode_error!(Node,
     //     r#"node "123" 456"#,
     //     "unexpected argument");

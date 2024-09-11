@@ -22,8 +22,8 @@ pub use kfl_derive::{Decode, DecodePartial, DecodeScalar};
 #[cfg(feature = "derive")]
 pub use kfl_derive::{Encode, EncodePartial, EncodeScalar};
 
-pub use wrappers::{decode, decode_children, decode_with_context, parse};
-pub use wrappers::{encode, encode_children, print};
+pub use errors::Error;
 pub use traits::{Decode, DecodePartial, DecodeScalar};
 pub use traits::{Encode, EncodePartial, EncodeScalar};
-pub use errors::Error;
+pub use wrappers::{decode, decode_children, decode_with_context, parse};
+pub use wrappers::{encode, encode_children, print};
