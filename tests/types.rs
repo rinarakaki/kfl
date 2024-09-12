@@ -35,7 +35,7 @@ fn decode_types() {
             1_234 \
             +1234 \
             -1234 \
-            ob101 \
+            0b101 \
             1.234 \
             /hello/world \
             true \
