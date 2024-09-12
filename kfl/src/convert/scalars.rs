@@ -27,15 +27,15 @@ fn digits(radix: u32) -> Repr<char> {
 }
 
 fn decimal_number() -> Repr<char> {
-    one('-').or(one('+')).or(seq([]))
+    one('-').or(one('+')).or(empty())
         .mul(digit(10)).mul(digits(10))
-        .mul(one('.').mul(digit(10)).mul(digits(10)).or(seq([])))
-        .mul(one('e').or(one('E')).mul(one('-').or(one('+')).or(seq([]))).mul(digits(10)).or(seq([])))
+        .mul(one('.').mul(digit(10)).mul(digits(10)).or(empty()))
+        .mul(one('e').or(one('E')).mul(one('-').or(one('+')).or(empty())).mul(digits(10)).or(empty()))
         // .map(|v| (10, v.chars().filter(|c| c != &'_').collect::<String>().into()))
 }
 
 fn radix_number() -> Repr<char> {
-    one('-').or(one('+')).or(seq([]))
+    one('-').or(one('+')).or(empty())
         .mul(one('0'))
         .mul(
             one('b').mul(digit(2).mul(digits(2)) /* .map(|s| (2, s)) */)
