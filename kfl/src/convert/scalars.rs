@@ -1,76 +1,58 @@
 //! Convert built-in scalar types.
 
-use alloc::{boxed::Box, format, string::String};
+use alloc::{format, string::String};
 use core::str::FromStr;
 
-use chumsky::{extra::Full, prelude::*};
+use repr::{Repr, wrappers::*};
 
 use crate::{
     ast::Scalar,
     context::Context,
-    errors::{DecodeError, EncodeError, ExpectedType, ParseError},
+    errors::{DecodeError, EncodeError, ExpectedType},
     traits::{DecodeScalar, EncodeScalar},
 };
 
-type I<'a> = &'a str;
-type Extra = Full<ParseError, Context, ()>;
-
-fn digit<'a>(radix: u32) -> impl Parser<'a, I<'a>, char, Extra> {
-    any().filter(move |c: &char| c.is_digit(radix))
+fn digit(radix: u32) -> Repr<char> {
+    match radix {
+        2 => interval('0', '1'),
+        8 => interval('0', '7'),
+        10 => interval('0', '9'),
+        16 => interval('0', '9').or(interval('a', 'f')).or(interval('A', 'F')),
+        _ => panic!("invalid radix"),
+    }
 }
 
-fn digits<'a>(radix: u32) -> impl Parser<'a, I<'a>, &'a str, Extra> {
-    any()
-        .filter(move |c: &char| c == &'_' || c.is_digit(radix))
-        .repeated()
-        .to_slice()
+fn digits(radix: u32) -> Repr<char> {
+    one('_').or(digit(radix)).inf()
 }
 
-fn decimal_number<'a>() -> impl Parser<'a, I<'a>, (u32, Box<str>), Extra> {
-    just('-')
-        .or(just('+'))
-        .or_not()
-        .then(digit(10))
-        .then(digits(10))
-        .then(just('.').then(digit(10)).then(digits(10)).or_not())
-        .then(
-            just('e')
-                .or(just('E'))
-                .then(just('-').or(just('+')).or_not())
-                .then(digits(10))
-                .or_not(),
+fn decimal_number() -> Repr<char> {
+    one('-').or(one('+')).or(seq([]))
+        .mul(digit(10)).mul(digits(10))
+        .mul(one('.').mul(digit(10)).mul(digits(10)).or(seq([])))
+        .mul(one('e').or(one('E')).mul(one('-').or(one('+')).or(seq([]))).mul(digits(10)).or(seq([])))
+        // .map(|v| (10, v.chars().filter(|c| c != &'_').collect::<String>().into()))
+}
+
+fn radix_number() -> Repr<char> {
+    one('-').or(one('+')).or(seq([]))
+        .mul(one('0'))
+        .mul(
+            one('b').mul(digit(2).mul(digits(2)) /* .map(|s| (2, s)) */)
+            .or(one('o').mul(digit(8).mul(digits(8))) /* .map(|s| (8, s)) */)
+            .or(one('x').mul(digit(16).mul(digits(16))) /* .map(|s| (16, s)) */)
         )
-        .to_slice()
-        .map(|v| {
-            (
-                10,
-                v.chars().filter(|c| c != &'_').collect::<String>().into(),
-            )
-        })
+        // .map(|(sign, (radix, value))| {
+        //     let mut s = String::with_capacity(value.len() + sign.map_or(0, |_| 1));
+        //     if let Some(c) = sign {
+        //         s.push(c)
+        //     }
+        //     s.extend(value.chars().filter(|&c| c != '_'));
+        //     (radix, s.into())
+        // })
 }
 
-fn radix_number<'a>() -> impl Parser<'a, I<'a>, (u32, Box<str>), Extra> {
-    // sign
-    just('-')
-        .or(just('+'))
-        .or_not()
-        .then_ignore(just('0'))
-        .then(choice((
-            just('b').ignore_then(digit(2).then(digits(2)).to_slice().map(|s| (2, s))),
-            just('o').ignore_then(digit(8).then(digits(8)).to_slice().map(|s| (10, s))),
-            just('x').ignore_then(digit(16).then(digits(16)).to_slice().map(|s| (16, s))),
-        )))
-        .map(|(sign, (radix, value))| {
-            let mut s = String::with_capacity(value.len() + sign.map_or(0, |_| 1));
-            if let Some(c) = sign {
-                s.push(c)
-            }
-            s.extend(value.chars().filter(|&c| c != '_'));
-            (radix, s.into())
-        })
-}
-
-fn number<'a>() -> impl Parser<'a, I<'a>, (u32, Box<str>), Extra> {
+fn number() -> Repr<char> {
     radix_number().or(decimal_number())
 }
 
