@@ -27,20 +27,19 @@ fn digits(radix: u32) -> Repr<char> {
 }
 
 fn decimal_number() -> Repr<char> {
-    one('-').or(one('+')).or(empty())
+    empty().or(one('-').or(one('+')))
         .mul(digit(10)).mul(digits(10))
         .mul(one('.').mul(digit(10)).mul(digits(10)).or(empty()))
-        .mul(one('e').or(one('E')).mul(one('-').or(one('+')).or(empty())).mul(digits(10)).or(empty()))
-        // .map(|v| (10, v.chars().filter(|c| c != &'_').collect::<String>().into()))
+        .mul(one('e').or(one('E')).mul(empty().or(one('-').or(one('+')))).mul(digits(10)).or(empty()))
 }
 
 fn radix_number() -> Repr<char> {
-    one('-').or(one('+')).or(empty())
+    empty().or(one('-').or(one('+')))
         .mul(one('0'))
         .mul(
-            one('b').mul(digit(2).mul(digits(2)) /* .map(|s| (2, s)) */)
-            .or(one('o').mul(digit(8).mul(digits(8))) /* .map(|s| (8, s)) */)
-            .or(one('x').mul(digit(16).mul(digits(16))) /* .map(|s| (16, s)) */)
+            one('b').cap().mul(digit(2).mul(digits(2)).cap())
+            .or(one('o').cap().mul(digit(8).mul(digits(8)).cap()))
+            .or(one('x').cap().mul(digit(16).mul(digits(16)).cap()))
         )
         // .map(|(sign, (radix, value))| {
         //     let mut s = String::with_capacity(value.len() + sign.map_or(0, |_| 1));
@@ -52,8 +51,30 @@ fn radix_number() -> Repr<char> {
         // })
 }
 
-fn number() -> Repr<char> {
-    radix_number().or(decimal_number())
+fn number(value: &str) -> Option<(u32, String)> {
+    match decimal_number().to_regex().captures(value) {
+        Some(caps) => Some((10, caps.get(0).unwrap().as_str().chars().filter(|c| c != &'_').collect::<String>())),
+        None => {
+            match radix_number().to_regex().captures(value) {
+                Some(caps) => {
+                    let sign = caps.get(1).map(|c| c.as_str().chars().next().unwrap());
+                    let radix = match caps.get(3).unwrap().as_str() {
+                        "b" => 2,
+                        "o" => 8,
+                        "x" => 16,
+                        _ => unreachable!(),
+                    };
+                    let mut s = String::with_capacity(value.len() + sign.map_or(0, |_| 1));
+                    if let Some(c) = sign {
+                        s.push(c)
+                    }
+                    s.extend(value.chars().filter(|&c| c != '_'));
+                    Some((radix, s))
+                }
+                None => None,
+            }
+        }
+    }
 }
 
 macro_rules! impl_integer {
@@ -70,13 +91,10 @@ macro_rules! impl_integer {
                         });
                     }
                 }
-                match number()
-                    .parse_with_state(scalar.literal.as_ref(), ctx)
-                    .into_result()
-                {
-                    Ok((radix, value)) => <$ty>::from_str_radix(&value, radix)
+                match number(scalar.literal.as_ref()) {
+                    Some((radix, value)) => <$ty>::from_str_radix(&value, radix)
                         .map_err(|err| DecodeError::conversion(ctx.span(&scalar), err)),
-                    Err(_) => Err(DecodeError::scalar_kind(
+                    None => Err(DecodeError::scalar_kind(
                         ctx.span(&scalar),
                         "integer",
                         scalar.literal.clone(),
@@ -122,18 +140,15 @@ macro_rules! impl_decimal {
                         });
                     }
                 }
-                match number()
-                    .parse_with_state(scalar.literal.as_ref(), ctx)
-                    .into_result()
-                {
-                    Ok((10, value)) => <$ty>::from_str(value.as_ref())
+                match number(scalar.literal.as_ref()) {
+                    Some((10, value)) => <$ty>::from_str(value.as_ref())
                         .map_err(|err| DecodeError::conversion(ctx.span(&scalar), err)),
-                    Ok(_) => Err(DecodeError::unexpected(
+                    Some(_) => Err(DecodeError::unexpected(
                         ctx.span(&scalar),
                         "radix",
                         "radix other than 10 (decimal) is not implemented",
                     )),
-                    Err(_) => Err(DecodeError::scalar_kind(
+                    None => Err(DecodeError::scalar_kind(
                         ctx.span(&scalar),
                         "decimal",
                         scalar.literal.clone(),
