@@ -9,13 +9,13 @@ pub fn emit_new_type(s: &NewType) -> syn::Result<TokenStream> {
     let ctx = syn::Ident::new("ctx", Span::mixed_site());
     Ok(quote! {
         impl ::kfl::traits::Decode for #s_name {
-            fn decode(#node: &::kfl::ast::Node,
-                      #ctx: &mut ::kfl::context::Context)
-                -> Result<Self, ::kfl::errors::DecodeError>
-            {
-                if #node.arguments.len() > 0 ||
-                    #node.properties.len() > 0 ||
-                    #node.children.is_some()
+            fn decode(
+                #node: &::kfl::ast::Node,
+                #ctx: &mut ::kfl::context::Context
+            ) -> Result<Self, ::kfl::errors::DecodeError> {
+                if #node.arguments.len() > 0
+                    || #node.properties.len() > 0
+                    || #node.children.is_some()
                 {
                     ::kfl::traits::Decode::decode(#node, #ctx)
                         .map(Some)
