@@ -3,7 +3,7 @@
 use alloc::{format, string::String};
 use core::str::FromStr;
 
-use repr::{Repr, wrappers::*};
+use repr::{wrappers::*, Repr};
 
 use crate::{
     ast::Scalar,
@@ -17,7 +17,9 @@ fn digit(radix: u32) -> Repr<char> {
         2 => interval('0', '1'),
         8 => interval('0', '7'),
         10 => interval('0', '9'),
-        16 => interval('0', '9').or(interval('a', 'f')).or(interval('A', 'F')),
+        16 => interval('0', '9')
+            .or(interval('a', 'f'))
+            .or(interval('A', 'F')),
         _ => panic!("invalid radix"),
     }
 }
@@ -27,50 +29,69 @@ fn digits(radix: u32) -> Repr<char> {
 }
 
 fn decimal_number() -> Repr<char> {
-    empty().or(one('-').or(one('+')))
-        .mul(digit(10)).mul(digits(10))
+    empty()
+        .or(one('-').or(one('+')))
+        .mul(digit(10))
+        .mul(digits(10))
         .mul(one('.').mul(digit(10)).mul(digits(10)).or(empty()))
-        .mul(one('e').or(one('E')).mul(empty().or(one('-').or(one('+')))).mul(digits(10)).or(empty()))
+        .mul(
+            one('e')
+                .or(one('E'))
+                .mul(empty().or(one('-').or(one('+'))))
+                .mul(digits(10))
+                .or(empty()),
+        )
 }
 
 fn radix_number() -> Repr<char> {
-    empty().or(one('-').or(one('+')))
-        .mul(one('0'))
-        .mul(
-            one('b').mul(digit(2).mul(digits(2)))
+    empty().or(one('-').or(one('+'))).mul(one('0')).mul(
+        one('b')
+            .mul(digit(2).mul(digits(2)))
             .or(one('o').mul(digit(8).mul(digits(8))))
-            .or(one('x').mul(digit(16).mul(digits(16))))
-        )
+            .or(one('x').mul(digit(16).mul(digits(16)))),
+    )
 }
 
 fn number(value: &str) -> Option<(u32, String)> {
     match decimal_number().to_regex().captures(value) {
-        Some(caps) => Some((10, caps.get(0).unwrap().as_str().chars().filter(|c| c != &'_').collect::<String>())),
-        None => {
-            match radix_number().to_regex().captures(value) {
-                Some(caps) => {
-                    let mut value = caps.get(0).unwrap().as_str().chars().filter(|c| c != &'_').collect::<String>();
-                    let sign = if value.starts_with('-') || value.starts_with('+') {
-                        Some(value.remove(0))
-                    } else {
-                        None
-                    };
-                    let radix = match &value[..2] {
-                        "0b" => 2,
-                        "0o" => 8,
-                        "0x" => 16,
-                        _ => unreachable!(),
-                    };
-                    let mut s = String::with_capacity(value.len() + sign.map_or(0, |_| 1));
-                    if let Some(c) = sign {
-                        s.push(c)
-                    }
-                    s.extend(value[2..].chars());
-                    Some((radix, s))
+        Some(caps) => Some((
+            10,
+            caps.get(0)
+                .unwrap()
+                .as_str()
+                .chars()
+                .filter(|c| c != &'_')
+                .collect::<String>(),
+        )),
+        None => match radix_number().to_regex().captures(value) {
+            Some(caps) => {
+                let mut value = caps
+                    .get(0)
+                    .unwrap()
+                    .as_str()
+                    .chars()
+                    .filter(|c| c != &'_')
+                    .collect::<String>();
+                let sign = if value.starts_with('-') || value.starts_with('+') {
+                    Some(value.remove(0))
+                } else {
+                    None
+                };
+                let radix = match &value[..2] {
+                    "0b" => 2,
+                    "0o" => 8,
+                    "0x" => 16,
+                    _ => unreachable!(),
+                };
+                let mut s = String::with_capacity(value.len() + sign.map_or(0, |_| 1));
+                if let Some(c) = sign {
+                    s.push(c)
                 }
-                None => None,
+                s.extend(value[2..].chars());
+                Some((radix, s))
             }
-        }
+            None => None,
+        },
     }
 }
 
