@@ -37,18 +37,10 @@ fn radix_number() -> Repr<char> {
     empty().or(one('-').or(one('+')))
         .mul(one('0'))
         .mul(
-            one('b').cap().mul(digit(2).mul(digits(2)).cap())
-            .or(one('o').cap().mul(digit(8).mul(digits(8)).cap()))
-            .or(one('x').cap().mul(digit(16).mul(digits(16)).cap()))
+            one('b').mul(digit(2).mul(digits(2)))
+            .or(one('o').mul(digit(8).mul(digits(8))))
+            .or(one('x').mul(digit(16).mul(digits(16))))
         )
-        // .map(|(sign, (radix, value))| {
-        //     let mut s = String::with_capacity(value.len() + sign.map_or(0, |_| 1));
-        //     if let Some(c) = sign {
-        //         s.push(c)
-        //     }
-        //     s.extend(value.chars().filter(|&c| c != '_'));
-        //     (radix, s.into())
-        // })
 }
 
 fn number(value: &str) -> Option<(u32, String)> {
@@ -57,18 +49,23 @@ fn number(value: &str) -> Option<(u32, String)> {
         None => {
             match radix_number().to_regex().captures(value) {
                 Some(caps) => {
-                    let sign = caps.get(1).map(|c| c.as_str().chars().next().unwrap());
-                    let radix = match caps.get(3).unwrap().as_str() {
-                        "b" => 2,
-                        "o" => 8,
-                        "x" => 16,
+                    let mut value = caps.get(0).unwrap().as_str().chars().filter(|c| c != &'_').collect::<String>();
+                    let sign = if value.starts_with('-') || value.starts_with('+') {
+                        Some(value.remove(0))
+                    } else {
+                        None
+                    };
+                    let radix = match &value[..2] {
+                        "0b" => 2,
+                        "0o" => 8,
+                        "0x" => 16,
                         _ => unreachable!(),
                     };
                     let mut s = String::with_capacity(value.len() + sign.map_or(0, |_| 1));
                     if let Some(c) = sign {
                         s.push(c)
                     }
-                    s.extend(value.chars().filter(|&c| c != '_'));
+                    s.extend(value[2..].chars());
                     Some((radix, s))
                 }
                 None => None,

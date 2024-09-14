@@ -18,6 +18,16 @@ struct Scalars {
     #[kfl(argument)]
     i64_b: i64,
     #[kfl(argument)]
+    i64_o: i64,
+    #[kfl(argument)]
+    i64_x: i64,
+    #[kfl(argument)]
+    i64_b_minus: i64,
+    #[kfl(argument)]
+    i64_o_minus: i64,
+    #[kfl(argument)]
+    i64_x_minus: i64,
+    #[kfl(argument)]
     f64: f64,
     #[kfl(argument)]
     path: PathBuf,
@@ -35,7 +45,12 @@ fn decode_types() {
             1_234 \
             +1234 \
             -1234 \
-            0b101 \
+            0b1 \
+            0o7 \
+            0xf \
+            -0b1 \
+            -0o7 \
+            -0xf \
             1.234 \
             /hello/world \
             true \
@@ -46,7 +61,12 @@ fn decode_types() {
             i641: 1234,
             i64_plus: 1234,
             i64_minus: -1234,
-            i64_b: 5,
+            i64_b: 1,
+            i64_o: 7,
+            i64_x: 15,
+            i64_b_minus: -1,
+            i64_o_minus: -7,
+            i64_x_minus: -15,
             f64: 1.234,
             path: PathBuf::from("/hello/world"),
             boolean: true,
