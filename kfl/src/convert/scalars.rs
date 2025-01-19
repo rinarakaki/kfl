@@ -3,7 +3,7 @@
 use alloc::{format, string::String};
 use core::str::FromStr;
 
-use repr::{wrappers::*, Repr};
+use repr::{Repr, wrappers::*};
 
 use crate::{
     ast::Scalar,
