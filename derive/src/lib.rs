@@ -11,7 +11,7 @@ mod variants;
 use alloc::{format, string::String};
 use definition::Definition;
 use proc_macro::TokenStream;
-use scalar::{emit_decode_scalar, emit_encode_scalar, Scalar};
+use scalar::{Scalar, emit_decode_scalar, emit_encode_scalar};
 
 type EmitResult = syn::Result<proc_macro2::TokenStream>;
 

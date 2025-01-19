@@ -237,7 +237,7 @@ impl DecodeScalar for Vec<u8> {
         if is_base64 {
             #[cfg(feature = "base64")]
             {
-                use base64::{engine::general_purpose::STANDARD, Engine as _};
+                use base64::{Engine as _, engine::general_purpose::STANDARD};
                 match STANDARD.decode(scalar.literal.as_bytes()) {
                     Ok(vec) => Ok(vec),
                     Err(e) => Err(DecodeError::conversion(ctx.span(&scalar), e)),

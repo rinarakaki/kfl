@@ -518,7 +518,7 @@ impl FieldAttrs {
                     return Err(syn::Error::new(
                         span,
                         "this attribute is not supported on fields",
-                    ))
+                    ));
                 }
             }
         }
@@ -552,8 +552,9 @@ fn parse_attr_list(attrs: &[syn::Attribute]) -> syn::Result<Vec<(Attr, Span)>> {
     Ok(all)
 }
 
-fn parse_attrs(input: ParseStream) -> syn::Result<impl IntoIterator<Item = (Attr, Span)>> {
+fn parse_attrs(input: ParseStream) -> syn::Result<Vec<(Attr, Span)>> {
     Punctuated::<_, syn::Token![,]>::parse_terminated_with(input, Attr::parse)
+        .map(|attrs| attrs.into_iter().collect())
 }
 
 impl Attr {

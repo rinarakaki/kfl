@@ -1,14 +1,16 @@
+cargo-features = ["edition2024"]
+
 [package]
 name = "kfl-derive"
 version = "0.3.0"
-edition = "2021"
+edition = "2024"
 description = "A derive implementation for kfl KDL parser"
 license = "MIT/Apache-2.0"
 keywords = ["kdl", "configuration"]
 categories = ["no-std"]
 homepage = "https://gitlab.com/synthetic/kfl/kfl"
 documentation = "https://docs.rs/kfl-derive"
-rust-version = "1.70.0"
+rust-version = "1.85.0"
 readme = "README.md"
 
 [lib]

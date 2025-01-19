@@ -308,7 +308,7 @@ impl Display for FormatUnexpected<'_> {
 
 impl ParseError {
     pub(crate) fn with_expected_kind(mut self, token: &'static str) -> Self {
-        if let ParseError::Unexpected {
+        if let &mut ParseError::Unexpected {
             ref mut expected, ..
         } = &mut self
         {
@@ -319,7 +319,7 @@ impl ParseError {
 
     #[allow(dead_code)]
     pub(crate) fn with_no_expected(mut self) -> Self {
-        if let ParseError::Unexpected {
+        if let &mut ParseError::Unexpected {
             ref mut expected, ..
         } = &mut self
         {
@@ -354,7 +354,7 @@ impl<'a> chumsky::error::Error<'a, &'a str> for ParseError {
             (Unclosed { .. }, _) => self,
             (_, other @ Unclosed { .. }) => other,
             (
-                Unexpected {
+                &mut Unexpected {
                     expected: ref mut dest,
                     ..
                 },

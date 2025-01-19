@@ -1,7 +1,7 @@
 use alloc::{format, vec::Vec};
 
 use proc_macro2::{Span, TokenStream};
-use quote::{quote, ToTokens};
+use quote::{ToTokens, quote};
 use syn::ext::IdentExt;
 
 use crate::{
