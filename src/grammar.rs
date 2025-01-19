@@ -128,13 +128,10 @@ fn ml_comment<'a>() -> impl Parser<'a, I<'a>, (), Extra> + Clone {
     })
     .map_err_with_state(|err, span, _| {
         let span = Span::from(span);
-        if matches!(
-            &err,
-            ParseError::Unexpected {
-                found: TokenFormat::Eoi,
-                ..
-            }
-        ) && span.len() > 2
+        if matches!(&err, ParseError::Unexpected {
+            found: TokenFormat::Eoi,
+            ..
+        }) && span.len() > 2
         {
             err.merge(ParseError::Unclosed {
                 label: "comment",
@@ -257,13 +254,10 @@ fn escaped_string<'a>() -> impl Parser<'a, I<'a>, Box<str>, Extra> + Clone {
         )
         .then_ignore(just('"'))
         .map_err_with_state(|err: ParseError, span, _| {
-            if matches!(
-                &err,
-                ParseError::Unexpected {
-                    found: TokenFormat::Eoi,
-                    ..
-                }
-            ) {
+            if matches!(&err, ParseError::Unexpected {
+                found: TokenFormat::Eoi,
+                ..
+            }) {
                 err.merge(ParseError::Unclosed {
                     label: "string",
                     opened_at: Span(span.start, span.start + 1), //span.before_start(1),
@@ -399,13 +393,10 @@ fn nodes<'a>() -> impl Parser<'a, I<'a>, Vec<Node>, Extra> {
     recursive(|nodes| {
         let braced_nodes = just('{').ignore_then(nodes.then_ignore(just('}')).map_err_with_state(
             |err, span, _| {
-                if matches!(
-                    &err,
-                    ParseError::Unexpected {
-                        found: TokenFormat::Eoi,
-                        ..
-                    }
-                ) {
+                if matches!(&err, ParseError::Unexpected {
+                    found: TokenFormat::Eoi,
+                    ..
+                }) {
                     let span = Span::from(span);
                     err.merge(ParseError::Unclosed {
                         label: "curly braces",
@@ -483,11 +474,7 @@ fn nodes<'a>() -> impl Parser<'a, I<'a>, Vec<Node>, Extra> {
                 vec.into_iter()
                     .filter_map(
                         |(comment, node)| {
-                            if comment.is_none() {
-                                Some(node)
-                            } else {
-                                None
-                            }
+                            if comment.is_none() { Some(node) } else { None }
                         },
                     )
                     .collect()

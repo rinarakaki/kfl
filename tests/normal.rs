@@ -10,12 +10,9 @@ fn decode_argument_named() {
         #[kfl(argument)]
         name: String,
     }
-    assert_decode!(
-        r#"node "hello""#,
-        Node {
-            name: "hello".into()
-        }
-    );
+    assert_decode!(r#"node "hello""#, Node {
+        name: "hello".into()
+    });
     assert_decode_error!(Node, r#"node "hello" "world""#, "unexpected argument");
     assert_decode_error!(
         Node,
@@ -46,12 +43,9 @@ fn decode_argument_raw_ident() {
         #[kfl(argument)]
         r#type: String,
     }
-    assert_decode!(
-        r#"node "hello""#,
-        Node {
-            r#type: "hello".into()
-        }
-    );
+    assert_decode!(r#"node "hello""#, Node {
+        r#type: "hello".into()
+    });
     assert_decode_error!(Node, r#"node "hello" "world""#, "unexpected argument");
     assert_decode_error!(
         Node,
@@ -68,12 +62,9 @@ fn decode_argument_default_named() {
         #[kfl(argument, default)]
         name: String,
     }
-    assert_decode!(
-        r#"node "hello""#,
-        Node {
-            name: "hello".into()
-        }
-    );
+    assert_decode!(r#"node "hello""#, Node {
+        name: "hello".into()
+    });
     assert_decode_error!(Node, r#"node "hello" "world""#, "unexpected argument");
     assert_decode!(r#"node"#, Node { name: "".into() });
 }
@@ -94,19 +85,13 @@ fn decode_argument_default_value_named() {
         #[kfl(argument, default = "unnamed".into())]
         name: String,
     }
-    assert_decode!(
-        r#"node "hello""#,
-        Node {
-            name: "hello".into()
-        }
-    );
+    assert_decode!(r#"node "hello""#, Node {
+        name: "hello".into()
+    });
     assert_decode_error!(Node, r#"node "hello" "world""#, "unexpected argument");
-    assert_decode!(
-        r#"node"#,
-        Node {
-            name: "unnamed".into()
-        }
-    );
+    assert_decode!(r#"node"#, Node {
+        name: "unnamed".into()
+    });
 }
 
 #[test]
@@ -116,19 +101,13 @@ fn decode_argument_default_option_value_named() {
         #[kfl(argument, default = Some("unnamed".into()))]
         name: Option<String>,
     }
-    assert_decode!(
-        r#"node "hello""#,
-        Node {
-            name: Some("hello".into())
-        }
-    );
+    assert_decode!(r#"node "hello""#, Node {
+        name: Some("hello".into())
+    });
     assert_decode_error!(Node, r#"node "hello" "world""#, "unexpected argument");
-    assert_decode!(
-        r#"node"#,
-        Node {
-            name: Some("unnamed".into())
-        }
-    );
+    assert_decode!(r#"node"#, Node {
+        name: Some("unnamed".into())
+    });
     assert_decode!(r#"node null"#, Node { name: None });
 }
 
@@ -139,12 +118,9 @@ fn decode_property_named() {
         #[kfl(property)]
         name: String,
     }
-    assert_decode!(
-        r#"node name="hello""#,
-        Node {
-            name: "hello".into()
-        }
-    );
+    assert_decode!(r#"node name="hello""#, Node {
+        name: "hello".into()
+    });
     assert_decode_error!(
         Node,
         r#"node name="hello" y="world""#,
@@ -173,12 +149,9 @@ fn decode_property_raw_ident() {
         #[kfl(property)]
         r#type: String,
     }
-    assert_decode!(
-        r#"node type="hello""#,
-        Node {
-            r#type: "hello".into()
-        }
-    );
+    assert_decode!(r#"node type="hello""#, Node {
+        r#type: "hello".into()
+    });
     assert_decode_error!(
         Node,
         r#"node type="hello" y="world""#,
@@ -194,12 +167,9 @@ fn decode_property_default() {
         #[kfl(property, default)]
         name: String,
     }
-    assert_decode!(
-        r#"node name="hello""#,
-        Node {
-            name: "hello".into()
-        }
-    );
+    assert_decode!(r#"node name="hello""#, Node {
+        name: "hello".into()
+    });
     assert_decode!(r#"node"#, Node { name: "".into() });
 }
 
@@ -210,18 +180,12 @@ fn decode_property_default_value() {
         #[kfl(property, default="unknown".into())]
         label: String,
     }
-    assert_decode!(
-        r#"node label="hello""#,
-        Node {
-            label: "hello".into()
-        }
-    );
-    assert_decode!(
-        r#"node"#,
-        Node {
-            label: "unknown".into()
-        }
-    );
+    assert_decode!(r#"node label="hello""#, Node {
+        label: "hello".into()
+    });
+    assert_decode!(r#"node"#, Node {
+        label: "unknown".into()
+    });
 }
 
 #[test]
@@ -231,18 +195,12 @@ fn decode_property_default_option_value() {
         #[kfl(property, default = Some("unknown".into()))]
         label: Option<String>,
     }
-    assert_decode!(
-        r#"node label="hello""#,
-        Node {
-            label: Some("hello".into())
-        }
-    );
-    assert_decode!(
-        r#"node"#,
-        Node {
-            label: Some("unknown".into())
-        }
-    );
+    assert_decode!(r#"node label="hello""#, Node {
+        label: Some("hello".into())
+    });
+    assert_decode!(r#"node"#, Node {
+        label: Some("unknown".into())
+    });
     assert_decode!(r#"node label=null"#, Node { label: None });
 }
 
@@ -253,12 +211,9 @@ fn decode_property_name() {
         #[kfl(property(name = "x"))]
         name: String,
     }
-    assert_decode!(
-        r#"node x="hello""#,
-        Node {
-            name: "hello".into()
-        }
-    );
+    assert_decode!(r#"node x="hello""#, Node {
+        name: "hello".into()
+    });
     assert_decode_error!(
         Node,
         r#"node label="hello" y="world""#,
@@ -273,12 +228,9 @@ fn decode_option_property() {
     struct Node {
         #[kfl(property, default)] /* TODO test without default */ name: Option<String>,
     }
-    assert_decode!(
-        r#"node name="hello""#,
-        Node {
-            name: Some("hello".into())
-        }
-    );
+    assert_decode!(r#"node name="hello""#, Node {
+        name: Some("hello".into())
+    });
     assert_decode!(r#"node"#, Node { name: None });
     assert_decode!(r#"node name=null"#, Node { name: None });
 }
@@ -290,12 +242,9 @@ fn decode_var_arguments() {
         #[kfl(arguments)]
         params: Vec<u64>,
     }
-    assert_decode!(
-        r#"node 1 2 3"#,
-        Node {
-            params: vec![1, 2, 3]
-        }
-    );
+    assert_decode!(r#"node 1 2 3"#, Node {
+        params: vec![1, 2, 3]
+    });
     assert_decode!(r#"node"#, Node { params: vec![] });
 }
 
@@ -310,12 +259,9 @@ fn decode_var_properties() {
     scores.insert("john".into(), 13);
     scores.insert("jack".into(), 7);
     assert_decode!(r#"node john=13 jack=7"#, Node { scores });
-    assert_decode!(
-        r#"node"#,
-        Node {
-            scores: BTreeMap::new()
-        }
-    );
+    assert_decode!(r#"node"#, Node {
+        scores: BTreeMap::new()
+    });
 }
 
 #[test]
@@ -330,19 +276,16 @@ fn decode_children() {
         #[kfl(argument)]
         name: String,
     }
-    assert_decode!(
-        r#"parent { child "val1"; child "val2"; }"#,
-        Parent {
-            children: vec![
-                Child {
-                    name: "val1".into()
-                },
-                Child {
-                    name: "val2".into()
-                },
-            ]
-        }
-    );
+    assert_decode!(r#"parent { child "val1"; child "val2"; }"#, Parent {
+        children: vec![
+            Child {
+                name: "val1".into()
+            },
+            Child {
+                name: "val2".into()
+            },
+        ]
+    });
     assert_decode!(r#"parent"#, Parent { children: vec![] });
 
     // assert_eq!(decode_doc::<Parent>(r#"- "val1"; - "val2""#),
@@ -373,52 +316,40 @@ fn decode_filtered_children() {
         #[kfl(argument, default)]
         name: Option<String>,
     }
-    assert_decode!(
-        r#"parent { left "v1"; right "v2"; left "v3"; }"#,
-        Parent {
-            lefts: vec![
-                Left {
-                    name: Some("v1".into())
-                },
-                Left {
-                    name: Some("v3".into())
-                },
-            ],
-            rights: vec![Right {
-                name: Some("v2".into())
-            },]
-        }
-    );
-    assert_decode_children!(
-        r#"left "v1"; right "v2"; left "v3""#,
-        Parent {
-            lefts: vec![
-                Left {
-                    name: Some("v1".into())
-                },
-                Left {
-                    name: Some("v3".into())
-                },
-            ],
-            rights: vec![Right {
-                name: Some("v2".into())
-            },]
-        }
-    );
-    assert_decode!(
-        r#"parent { right; left; }"#,
-        Parent {
-            lefts: vec![Left { name: None }],
-            rights: vec![Right { name: None }]
-        }
-    );
-    assert_decode_children!(
-        r#"right; left"#,
-        Parent {
-            lefts: vec![Left { name: None }],
-            rights: vec![Right { name: None }]
-        }
-    );
+    assert_decode!(r#"parent { left "v1"; right "v2"; left "v3"; }"#, Parent {
+        lefts: vec![
+            Left {
+                name: Some("v1".into())
+            },
+            Left {
+                name: Some("v3".into())
+            },
+        ],
+        rights: vec![Right {
+            name: Some("v2".into())
+        },]
+    });
+    assert_decode_children!(r#"left "v1"; right "v2"; left "v3""#, Parent {
+        lefts: vec![
+            Left {
+                name: Some("v1".into())
+            },
+            Left {
+                name: Some("v3".into())
+            },
+        ],
+        rights: vec![Right {
+            name: Some("v2".into())
+        },]
+    });
+    assert_decode!(r#"parent { right; left; }"#, Parent {
+        lefts: vec![Left { name: None }],
+        rights: vec![Right { name: None }]
+    });
+    assert_decode_children!(r#"right; left"#, Parent {
+        lefts: vec![Left { name: None }],
+        rights: vec![Right { name: None }]
+    });
     assert_decode_error!(Parent, r#"some"#, "unexpected node `some`");
 }
 
@@ -448,15 +379,12 @@ fn decode_child() {
         #[kfl(child, default)]
         child2: Option<Child2>,
     }
-    assert_decode!(
-        r#"parent { child1 name="val1"; }"#,
-        Parent {
-            child1: Child1 {
-                name: "val1".into()
-            },
-            child2: None,
-        }
-    );
+    assert_decode!(r#"parent { child1 name="val1"; }"#, Parent {
+        child1: Child1 {
+            name: "val1".into()
+        },
+        child2: None,
+    });
     assert_decode!(
         r#"parent {
             child1 name="primary";
@@ -481,15 +409,12 @@ fn decode_child() {
         r#"parent"#,
         "child node for struct field `child1` is required"
     );
-    assert_decode_children!(
-        r#"child1 name="val1""#,
-        ParentPartial {
-            child1: Some(Child1 {
-                name: "val1".into()
-            }),
-            child2: None,
-        }
-    );
+    assert_decode_children!(r#"child1 name="val1""#, ParentPartial {
+        child1: Some(Child1 {
+            name: "val1".into()
+        }),
+        child2: None,
+    });
     assert_decode_children!(
         r#"child1 name="primary"
         child2 name="replica""#,
@@ -524,20 +449,14 @@ fn decode_child_default() {
         #[kfl(property)]
         name: String,
     }
-    assert_decode!(
-        r#"parent { child name="val1"; }"#,
-        Parent {
-            child: Child {
-                name: "val1".into()
-            }
+    assert_decode!(r#"parent { child name="val1"; }"#, Parent {
+        child: Child {
+            name: "val1".into()
         }
-    );
-    assert_decode!(
-        r#"parent"#,
-        Parent {
-            child: Child { name: "".into() }
-        }
-    );
+    });
+    assert_decode!(r#"parent"#, Parent {
+        child: Child { name: "".into() }
+    });
 }
 
 #[test]
@@ -552,22 +471,16 @@ fn decode_child_default_value() {
         #[kfl(property)]
         label: String,
     }
-    assert_decode!(
-        r#"parent { child label="val1"; }"#,
-        Parent {
-            main: Child {
-                label: "val1".into()
-            }
+    assert_decode!(r#"parent { child label="val1"; }"#, Parent {
+        main: Child {
+            label: "val1".into()
         }
-    );
-    assert_decode!(
-        r#"parent"#,
-        Parent {
-            main: Child {
-                label: "prop1".into()
-            }
+    });
+    assert_decode!(r#"parent"#, Parent {
+        main: Child {
+            label: "prop1".into()
         }
-    );
+    });
 }
 
 #[test]
@@ -588,18 +501,12 @@ fn decode_enum_named() {
         Var3(u32),
     }
     assert_decode!(r#"var0"#, Enum::Var0);
-    assert_decode!(
-        r#"var1 "hello""#,
-        Enum::Var1 {
-            name: "hello".into()
-        }
-    );
-    assert_decode!(
-        r#"var2 name="hello""#,
-        Enum::Var2 {
-            name: "hello".into()
-        }
-    );
+    assert_decode!(r#"var1 "hello""#, Enum::Var1 {
+        name: "hello".into()
+    });
+    assert_decode!(r#"var2 name="hello""#, Enum::Var2 {
+        name: "hello".into()
+    });
     assert_decode_error!(
         Enum,
         r#"something"#,
@@ -662,12 +569,9 @@ fn decode_str() {
     struct Node {
         #[kfl(argument)] /* str */ listen: SocketAddr,
     }
-    assert_decode!(
-        r#"node 127.0.0.1:8080"#,
-        Node {
-            listen: "127.0.0.1:8080".parse().unwrap()
-        }
-    );
+    assert_decode!(r#"node 127.0.0.1:8080"#, Node {
+        listen: "127.0.0.1:8080".parse().unwrap()
+    });
     assert_decode_error!(Node, r#"node "2/3""#, "invalid socket address syntax");
 }
 
@@ -677,12 +581,9 @@ fn decode_option_str() {
     struct Server {
         #[kfl(property, default)] /* str */ listen: Option<SocketAddr>,
     }
-    assert_decode!(
-        r#"server listen=127.0.0.1:8080"#,
-        Server {
-            listen: Some("127.0.0.1:8080".parse().unwrap())
-        }
-    );
+    assert_decode!(r#"server listen=127.0.0.1:8080"#, Server {
+        listen: Some("127.0.0.1:8080".parse().unwrap())
+    });
     assert_decode_error!(
         Server,
         r#"server listen="2/3""#,
@@ -697,18 +598,12 @@ fn decode_bytes() {
     struct Bytes {
         #[kfl(argument)] /* bytes */ data: Vec<u8>,
     }
-    assert_decode!(
-        r#"bytes (base64)"aGVsbG8=""#,
-        Bytes {
-            data: b"hello".to_vec()
-        }
-    );
-    assert_decode!(
-        r#"bytes "world""#,
-        Bytes {
-            data: b"world".to_vec()
-        }
-    );
+    assert_decode!(r#"bytes (base64)"aGVsbG8=""#, Bytes {
+        data: b"hello".to_vec()
+    });
+    assert_decode!(r#"bytes "world""#, Bytes {
+        data: b"world".to_vec()
+    });
     assert_decode_error!(Bytes, r#"bytes (base64)"2/3""#, "Invalid padding");
 }
 
@@ -718,18 +613,12 @@ fn decode_option_bytes() {
     struct Bytes {
         #[kfl(property)] /* bytes */ data: Option<Vec<u8>>,
     }
-    assert_decode!(
-        r#"bytes data=(base64)"aGVsbG8=""#,
-        Bytes {
-            data: Some(b"hello".to_vec())
-        }
-    );
-    assert_decode!(
-        r#"bytes data="world""#,
-        Bytes {
-            data: Some(b"world".to_vec())
-        }
-    );
+    assert_decode!(r#"bytes data=(base64)"aGVsbG8=""#, Bytes {
+        data: Some(b"hello".to_vec())
+    });
+    assert_decode!(r#"bytes data="world""#, Bytes {
+        data: Some(b"world".to_vec())
+    });
     assert_decode!(r#"bytes data=null"#, Bytes { data: None });
 }
 

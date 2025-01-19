@@ -32,18 +32,12 @@ fn decode_enum_scalar() {
         First,
         AnotherOption,
     }
-    assert_decode!(
-        r#"node first"#,
-        Node {
-            value: SomeScalar::First
-        }
-    );
-    assert_decode!(
-        r#"node another-option"#,
-        Node {
-            value: SomeScalar::AnotherOption
-        }
-    );
+    assert_decode!(r#"node first"#, Node {
+        value: SomeScalar::First
+    });
+    assert_decode!(r#"node another-option"#, Node {
+        value: SomeScalar::AnotherOption
+    });
     assert_decode_error!(
         Node,
         r#"node test"#,
@@ -58,12 +52,9 @@ fn decode_option_argument() {
         #[kfl(argument)]
         name: Option<String>,
     }
-    assert_decode!(
-        r#"node "hello""#,
-        Node {
-            name: Some("hello".into())
-        }
-    );
+    assert_decode!(r#"node "hello""#, Node {
+        name: Some("hello".into())
+    });
     // TODO(rnarkk) should fail since no `default` directive
     // assert_decode!(
     //     r#"node"#,

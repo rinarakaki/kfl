@@ -1,17 +1,19 @@
+cargo-features = ["edition2024"]
+
 [workspace]
 members = [".", "derive"]
 
 [package]
 name = "kfl"
 version = "0.3.0"
-edition = "2021"
+edition = "2024"
 description = "Another KDL language implementation"
 license = "MIT/Apache-2.0"
 keywords = ["kdl", "configuration", "parser"]
 categories = ["parsing", "parser-implementations", "config", "encoding"]
 homepage = "https://gitlab.com/synthetic/kfl/kfl"
 documentation = "https://docs.rs/kfl"
-rust-version = "1.70.0"
+rust-version = "1.85.0"
 readme = "README.md"
 
 [dependencies]
@@ -38,6 +40,7 @@ serde_json = "1"
 
 [features]
 default = ["std", "derive", "base64", "line-numbers"]
-derive = ["kfl-derive"]
-line-numbers = ["unicode-width"]
+derive = ["dep:kfl-derive"]
+base64 = ["dep:base64"]
+line-numbers = ["dep:unicode-width"]
 std = []
