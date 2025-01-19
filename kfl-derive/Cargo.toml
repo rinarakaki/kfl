@@ -21,5 +21,5 @@ quote = "1"
 proc-macro2 = "1"
 
 [dev-dependencies]
-kfl = { path = ".." }
+kfl = { path = "../kfl" }
 miette = { version = "7", features = ["fancy"] }
