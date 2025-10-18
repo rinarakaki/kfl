@@ -1,12 +1,12 @@
 [package]
 name = "kfl-derive"
-version = "0.4.0"
+version = "0.5.0"
 edition = "2024"
 description = "A derive implementation for kfl KDL parser"
 license = "MIT/Apache-2.0"
 keywords = ["kdl", "configuration"]
 categories = ["no-std"]
-homepage = "https://gitlab.com/synthetic/kfl/kfl"
+homepage = "https://github.com/rinarakaki/kfl"
 documentation = "https://docs.rs/kfl-derive"
 rust-version = "1.85.0"
 readme = "README.md"

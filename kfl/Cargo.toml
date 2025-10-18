@@ -1,18 +1,18 @@
 [package]
 name = "kfl"
-version = "0.4.0"
+version = "0.5.0"
 edition = "2024"
 description = "Another KDL language implementation"
 license = "MIT/Apache-2.0"
 keywords = ["kdl", "configuration", "parser"]
 categories = ["parsing", "parser-implementations", "config", "encoding"]
-homepage = "https://gitlab.com/synthetic/kfl/kfl"
+homepage = "https://github.com/rinarakaki/kfl"
 documentation = "https://docs.rs/kfl"
 rust-version = "1.85.0"
-readme = "README.md"
+readme = "../README.md"
 
 [dependencies]
-kfl-derive = { path = "../kfl-derive", version = "0", optional = true }
+kfl-derive = { path = "../kfl-derive", version = "0.5.0", optional = true }
 chumsky = { version = "= 1.0.0-alpha.7" }
 thiserror = "2"
 miette = "7"
@@ -22,8 +22,8 @@ miette = "7"
 base64 = { version = "0.22", optional = true }
 chrono = { version = "0.4", optional = true }
 http = { version = "1", optional = true }
-minicbor = { version = "0.24", optional = true, features = ["std", "derive"] }
-unicode-width = { version = "0.1", optional = true }
+minicbor = { version = "2", optional = true, features = ["std", "derive"] }
+unicode-width = { version = "0.2", optional = true }
 
 [dev-dependencies]
 miette = { version = "7", features = ["fancy"] }
