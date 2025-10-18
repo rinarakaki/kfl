@@ -155,7 +155,7 @@ impl<T: Encode> EncodePartial for Option<T> {
                 children.push(child);
             }
         };
-        let _ = mem::replace(&mut node.children, Some(children));
+        let _ = node.children.replace(children);
         Ok(())
     }
 }
@@ -212,7 +212,7 @@ impl<T: Encode> EncodePartial for Vec<T> {
             let child = <T as Encode>::encode(item, ctx)?;
             children.push(child);
         }
-        let _ = mem::replace(&mut node.children, Some(children));
+        let _ = node.children.replace(children);
         Ok(())
     }
 }
