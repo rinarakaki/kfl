@@ -53,11 +53,11 @@ pub fn emit_decode_struct(s: &Struct, named: bool, partial: bool) -> syn::Result
                     for #s_name #type_gen
                     #bounds
                 {
-                    fn decode_partial(&mut self,
+                    fn decode_partial(
+                        &mut self,
                         #node: &::kfl::ast::Node,
-                        #ctx: &mut ::kfl::context::Context)
-                        -> Result<bool, ::kfl::errors::DecodeError>
-                    {
+                        #ctx: &mut ::kfl::context::Context
+                    ) -> Result<bool, ::kfl::errors::DecodeError> {
                         #decode_partial
                     }
                     // fn insert_property(&mut self,
@@ -77,10 +77,10 @@ pub fn emit_decode_struct(s: &Struct, named: bool, partial: bool) -> syn::Result
     Ok(quote! {
         #(#extra_traits)*
         impl #impl_gen ::kfl::traits::Decode for #s_name #type_gen #bounds {
-            fn decode(#node: &::kfl::ast::Node,
-                      #ctx: &mut ::kfl::context::Context)
-                -> Result<Self, ::kfl::errors::DecodeError>
-            {
+            fn decode(
+                #node: &::kfl::ast::Node,
+                #ctx: &mut ::kfl::context::Context
+            ) -> Result<Self, ::kfl::errors::DecodeError> {
                 #check_type
                 #decode_arguments
                 #decode_properties

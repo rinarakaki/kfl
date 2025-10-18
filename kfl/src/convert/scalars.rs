@@ -1,77 +1,98 @@
 //! Convert built-in scalar types.
 
-use alloc::{boxed::Box, format, string::String};
+use alloc::{format, string::String};
 use core::str::FromStr;
 
-use chumsky::{extra::Full, prelude::*};
+use repr::{Repr, wrappers::*};
 
 use crate::{
     ast::Scalar,
     context::Context,
-    errors::{DecodeError, EncodeError, ExpectedType, ParseError},
+    errors::{DecodeError, EncodeError, ExpectedType},
     traits::{DecodeScalar, EncodeScalar},
 };
 
-type I<'a> = &'a str;
-type Extra = Full<ParseError, Context, ()>;
-
-fn digit<'a>(radix: u32) -> impl Parser<'a, I<'a>, char, Extra> {
-    any().filter(move |c: &char| c.is_digit(radix))
+fn digit(radix: u32) -> Repr<char> {
+    match radix {
+        2 => interval('0', '1'),
+        8 => interval('0', '7'),
+        10 => interval('0', '9'),
+        16 => interval('0', '9')
+            .or(interval('a', 'f'))
+            .or(interval('A', 'F')),
+        _ => panic!("invalid radix"),
+    }
 }
 
-fn digits<'a>(radix: u32) -> impl Parser<'a, I<'a>, &'a str, Extra> {
-    any()
-        .filter(move |c: &char| c == &'_' || c.is_digit(radix))
-        .repeated()
-        .to_slice()
+fn digits(radix: u32) -> Repr<char> {
+    one('_').or(digit(radix)).inf()
 }
 
-fn decimal_number<'a>() -> impl Parser<'a, I<'a>, (u32, Box<str>), Extra> {
-    just('-')
-        .or(just('+'))
-        .or_not()
-        .then(digit(10))
-        .then(digits(10))
-        .then(just('.').then(digit(10)).then(digits(10)).or_not())
-        .then(
-            just('e')
-                .or(just('E'))
-                .then(just('-').or(just('+')).or_not())
-                .then(digits(10))
-                .or_not(),
+fn decimal_number() -> Repr<char> {
+    empty()
+        .or(one('-').or(one('+')))
+        .mul(digit(10))
+        .mul(digits(10))
+        .mul(one('.').mul(digit(10)).mul(digits(10)).or(empty()))
+        .mul(
+            one('e')
+                .or(one('E'))
+                .mul(empty().or(one('-').or(one('+'))))
+                .mul(digits(10))
+                .or(empty()),
         )
-        .to_slice()
-        .map(|v| {
-            (
-                10,
-                v.chars().filter(|c| c != &'_').collect::<String>().into(),
-            )
-        })
 }
 
-fn radix_number<'a>() -> impl Parser<'a, I<'a>, (u32, Box<str>), Extra> {
-    // sign
-    just('-')
-        .or(just('+'))
-        .or_not()
-        .then_ignore(just('0'))
-        .then(choice((
-            just('b').ignore_then(digit(2).then(digits(2)).to_slice().map(|s| (2, s))),
-            just('o').ignore_then(digit(8).then(digits(8)).to_slice().map(|s| (10, s))),
-            just('x').ignore_then(digit(16).then(digits(16)).to_slice().map(|s| (16, s))),
-        )))
-        .map(|(sign, (radix, value))| {
-            let mut s = String::with_capacity(value.len() + sign.map_or(0, |_| 1));
-            if let Some(c) = sign {
-                s.push(c)
+fn radix_number() -> Repr<char> {
+    empty().or(one('-').or(one('+'))).mul(one('0')).mul(
+        one('b')
+            .mul(digit(2).mul(digits(2)))
+            .or(one('o').mul(digit(8).mul(digits(8))))
+            .or(one('x').mul(digit(16).mul(digits(16)))),
+    )
+}
+
+fn number(value: &str) -> Option<(u32, String)> {
+    match decimal_number().to_regex().captures(value) {
+        Some(caps) => Some((
+            10,
+            caps.get(0)
+                .unwrap()
+                .as_str()
+                .chars()
+                .filter(|c| c != &'_')
+                .collect::<String>(),
+        )),
+        None => match radix_number().to_regex().captures(value) {
+            Some(caps) => {
+                let mut value = caps
+                    .get(0)
+                    .unwrap()
+                    .as_str()
+                    .chars()
+                    .filter(|c| c != &'_')
+                    .collect::<String>();
+                let sign = if value.starts_with('-') || value.starts_with('+') {
+                    Some(value.remove(0))
+                } else {
+                    None
+                };
+                let radix = match &value[..2] {
+                    "0b" => 2,
+                    "0o" => 8,
+                    "0x" => 16,
+                    _ => unreachable!(),
+                };
+                let mut s = String::with_capacity(value.len() + sign.map_or(0, |_| 1));
+                if let Some(c) = sign {
+                    s.push(c)
+                }
+                s.extend(value[2..].chars());
+                Some((radix, s))
             }
-            s.extend(value.chars().filter(|&c| c != '_'));
-            (radix, s.into())
-        })
-}
-
-fn number<'a>() -> impl Parser<'a, I<'a>, (u32, Box<str>), Extra> {
-    radix_number().or(decimal_number())
+            None => None,
+        },
+    }
 }
 
 macro_rules! impl_integer {
@@ -88,13 +109,10 @@ macro_rules! impl_integer {
                         });
                     }
                 }
-                match number()
-                    .parse_with_state(scalar.literal.as_ref(), ctx)
-                    .into_result()
-                {
-                    Ok((radix, value)) => <$ty>::from_str_radix(&value, radix)
+                match number(scalar.literal.as_ref()) {
+                    Some((radix, value)) => <$ty>::from_str_radix(&value, radix)
                         .map_err(|err| DecodeError::conversion(ctx.span(&scalar), err)),
-                    Err(_) => Err(DecodeError::scalar_kind(
+                    None => Err(DecodeError::scalar_kind(
                         ctx.span(&scalar),
                         "integer",
                         scalar.literal.clone(),
@@ -140,18 +158,15 @@ macro_rules! impl_decimal {
                         });
                     }
                 }
-                match number()
-                    .parse_with_state(scalar.literal.as_ref(), ctx)
-                    .into_result()
-                {
-                    Ok((10, value)) => <$ty>::from_str(value.as_ref())
+                match number(scalar.literal.as_ref()) {
+                    Some((10, value)) => <$ty>::from_str(value.as_ref())
                         .map_err(|err| DecodeError::conversion(ctx.span(&scalar), err)),
-                    Ok(_) => Err(DecodeError::unexpected(
+                    Some(_) => Err(DecodeError::unexpected(
                         ctx.span(&scalar),
                         "radix",
                         "radix other than 10 (decimal) is not implemented",
                     )),
-                    Err(_) => Err(DecodeError::scalar_kind(
+                    None => Err(DecodeError::scalar_kind(
                         ctx.span(&scalar),
                         "decimal",
                         scalar.literal.clone(),
